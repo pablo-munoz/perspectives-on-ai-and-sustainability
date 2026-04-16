@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fire Watch Ourense — Implementation Plan</title>
+<style>
+  @page { margin: 2cm; size: A4; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a1a; line-height: 1.6; padding: 2rem; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 28px; color: #991b1b; border-bottom: 3px solid #991b1b; padding-bottom: 8px; margin-bottom: 6px; }
+  h2 { font-size: 20px; color: #1e3a5f; margin-top: 28px; margin-bottom: 10px; border-left: 4px solid #dc2626; padding-left: 10px; }
+  h3 { font-size: 16px; color: #374151; margin-top: 16px; margin-bottom: 6px; }
+  p, li { font-size: 13px; }
+  ul, ol { padding-left: 20px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: #6b7280; margin-bottom: 20px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; color: #fff; }
+  .badge-green { background: #22c55e; }
+  .badge-yellow { background: #eab308; color: #1a1a1a; }
+  .badge-orange { background: #f97316; }
+  .badge-red { background: #ef4444; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: 13px; }
+  th, td { border: 1px solid #d1d5db; padding: 6px 10px; text-align: left; }
+  th { background: #f3f4f6; font-weight: 600; }
+  code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: 'SF Mono', 'Fira Code', monospace; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 14px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin: 10px 0; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .layout-box { border: 2px solid #94a3b8; border-radius: 8px; padding: 12px; margin: 10px 0; font-family: monospace; font-size: 12px; line-height: 1.4; background: #f8fafc; white-space: pre; }
+  .section-card { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; margin: 10px 0; }
+  .page-break { page-break-before: always; }
+  .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .esade-tag { font-size: 11px; color: #fff; background: #1e3a5f; padding: 3px 10px; border-radius: 4px; }
+  .footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #d1d5db; font-size: 11px; color: #9ca3af; text-align: center; }
+  @media print {
+    body { padding: 0; }
+    .page-break { page-break-before: always; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <div></div>
+  <span class="esade-tag">ESADE — Perspectives on AI</span>
+</div>
+
+<h1>Fire Watch Ourense</h1>
+<p class="subtitle">Implementation Plan — Web Dashboard Prototype &nbsp;|&nbsp; April 2026</p>
+
+<h2>Project Overview</h2>
+<p>A Next.js web dashboard for <strong>AI-powered wildfire risk mapping</strong> in the rural areas of Ourense, Galicia (Spain). The system provides real-time fire risk visualization using a <strong>traffic-light system</strong> (<span class="badge badge-red">Critical</span> <span class="badge badge-orange">High</span> <span class="badge badge-yellow">Medium</span> <span class="badge badge-green">Low</span>), integrating weather data (AEMET API), active fire satellite data (NASA FIRMS), and terrain/vegetation analysis.</p>
+<p style="margin-top:6px"><strong>Target users:</strong> Forest agents, local council officers, and emergency responders.</p>
+
+<h3>Tech Stack</h3>
+<table>
+  <tr><th>Category</th><th>Technology</th></tr>
+  <tr><td>Framework</td><td>Next.js 16 + React 19 + TypeScript</td></tr>
+  <tr><td>Styling</td><td>Tailwind CSS 4 + clsx + tailwind-merge</td></tr>
+  <tr><td>Maps</td><td>Leaflet 1.9 + React-Leaflet 5</td></tr>
+  <tr><td>Charts</td><td>Recharts 2.15</td></tr>
+  <tr><td>Icons</td><td>Lucide React</td></tr>
+  <tr><td>Animations</td><td>Motion (Framer Motion) 12</td></tr>
+</table>
+
+<h2>1. Shared Utilities &amp; Mock Data</h2>
+<div class="section-card">
+  <p><strong>Files:</strong> <code>src/lib/utils.ts</code> &amp; <code>src/lib/mock-data.ts</code></p>
+  <ul>
+    <li><code>cn()</code> helper — combines <code>clsx</code> + <code>tailwind-merge</code></li>
+    <li><strong>Risk zones:</strong> ~8–10 polygons across Ourense municipalities with risk level, vegetation density, slope grade</li>
+    <li><strong>Fire hotspots:</strong> ~5–6 simulated FIRMS-style points (lat, lng, brightness, confidence, satellite, timestamp)</li>
+    <li><strong>Weather data:</strong> Current conditions (temp, humidity, wind, precipitation, FWI index)</li>
+    <li><strong>Historical trends:</strong> 7-day array of daily risk scores per zone</li>
+    <li><strong>Alerts:</strong> Active warnings (heat wave, high wind, etc.)</li>
+  </ul>
+</div>
+
+<h2>2. Interactive Map Component (Leaflet)</h2>
+<div class="section-card">
+  <p><strong>File:</strong> <code>src/components/FireMap.tsx</code> (client component)</p>
+  <ul>
+    <li>Leaflet map centered on Ourense (~42.34°N, 7.86°W), zoom 10</li>
+    <li><strong>Risk zone polygons</strong> — color-coded by risk level (green → yellow → orange → red)</li>
+    <li><strong>Fire hotspot markers</strong> — pulsing red circles from FIRMS data</li>
+    <li><strong>Popup on click</strong> — zone name, risk score, vegetation type, last updated</li>
+    <li><strong>Layer controls</strong> — toggle risk zones, hotspots, satellite/terrain base maps</li>
+    <li>Dynamic import with <code>ssr: false</code> (Leaflet requires <code>window</code>)</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<h2>3. Sidebar Panel</h2>
+<p><strong>File:</strong> <code>src/components/Sidebar.tsx</code></p>
+
+<h3>3a. Risk Summary (<code>RiskSummary.tsx</code>)</h3>
+<ul>
+  <li>Overall province risk level with traffic-light indicator (large colored circle)</li>
+  <li>Count of zones per risk level</li>
+  <li>"Last updated" timestamp</li>
+</ul>
+
+<h3>3b. Weather Panel (<code>WeatherPanel.tsx</code>)</h3>
+<ul>
+  <li>Current temperature, humidity, wind speed &amp; direction</li>
+  <li>Fire Weather Index (FWI) gauge</li>
+  <li>Precipitation forecast (next 24h)</li>
+  <li>Icons from Lucide</li>
+</ul>
+
+<h3>3c. Alerts Panel (<code>AlertsPanel.tsx</code>)</h3>
+<ul>
+  <li>Active warnings list (heat wave, wind advisory, etc.)</li>
+  <li>Color-coded severity badges</li>
+  <li>Animated entry with Motion</li>
+</ul>
+
+<h3>3d. Zone List (<code>ZoneList.tsx</code>)</h3>
+<ul>
+  <li>Scrollable list of all monitored zones</li>
+  <li>Each row: zone name, risk badge, trend arrow (up/down/stable)</li>
+  <li>Click to zoom map to that zone</li>
+</ul>
+
+<h2>4. Analytics Charts (Recharts)</h2>
+<div class="section-card">
+  <p><strong>File:</strong> <code>src/components/RiskChart.tsx</code></p>
+  <ul>
+    <li><strong>7-day risk trend line chart</strong> — one line per zone or aggregated province average</li>
+    <li><strong>Risk distribution bar chart</strong> — zones grouped by risk level</li>
+    <li>Responsive container, Tailwind-styled tooltips</li>
+  </ul>
+</div>
+
+<h2>5. Main Dashboard Page Layout</h2>
+<p><strong>File:</strong> <code>src/app/page.tsx</code></p>
+<div class="layout-box">┌──────────────────────────────────────────────────┐
+│  Header: "Fire Watch Ourense" + date + logo      │
+├─────────────┬────────────────────────────────────┤
+│             │                                    │
+│  Sidebar    │         Leaflet Map                │
+│  (320px)    │         (flex-1)                   │
+│             │                                    │
+│  • Risk     │                                    │
+│  • Weather  │                                    │
+│  • Alerts   │                                    │
+│  • Zones    │                                    │
+├─────────────┴────────────────────────────────────┤
+│  Bottom Panel: Risk Trend Charts (Recharts)      │
+└──────────────────────────────────────────────────┘</div>
+<ul>
+  <li>Full viewport height (<code>h-screen</code>)</li>
+  <li>Responsive: sidebar collapses to drawer on mobile</li>
+  <li>Dark theme optimized for control-room use</li>
+</ul>
+
+<h2>6. Styling &amp; Theming</h2>
+<div class="section-card">
+  <p><strong>Design tokens (dark theme):</strong></p>
+  <table>
+    <tr><th>Element</th><th>Color</th></tr>
+    <tr><td>Background</td><td><code>#0f172a</code> (dark navy)</td></tr>
+    <tr><td>Cards</td><td><code>#1e293b</code> (slate)</td></tr>
+    <tr><td>Low risk</td><td><code>#22c55e</code> <span class="badge badge-green">Green</span></td></tr>
+    <tr><td>Medium risk</td><td><code>#eab308</code> <span class="badge badge-yellow">Yellow</span></td></tr>
+    <tr><td>High risk</td><td><code>#f97316</code> <span class="badge badge-orange">Orange</span></td></tr>
+    <tr><td>Critical risk</td><td><code>#ef4444</code> <span class="badge badge-red">Red</span></td></tr>
+  </table>
+</div>
+
+<div class="page-break"></div>
+
+<h2>7. Machine Learning Model — Fire Risk Prediction</h2>
+
+<h3>7.1 Algorithm: Random Forest Classifier</h3>
+<div class="section-card">
+  <p>We use a <strong>Random Forest</strong> model for fire susceptibility mapping, validated by the reference paper <em>(Piao et al., 2022)</em> which achieved an <strong>AUC of 0.835</strong> on a comparable task using Google Earth Engine. Random Forest handles the non-linear relationships between vegetation density, terrain slope, and thermal data better than simpler regression models.</p>
+  <p style="margin-top:8px"><strong>Output:</strong> A probability score (0–1) per grid cell, mapped to a traffic-light classification for user adoption:</p>
+  <table>
+    <tr><th>Probability</th><th>Risk Level</th><th>Color</th><th>Action</th></tr>
+    <tr><td>0.0 – 0.25</td><td>Low</td><td><span class="badge badge-green">Green</span></td><td>Normal monitoring</td></tr>
+    <tr><td>0.25 – 0.50</td><td>Medium</td><td><span class="badge badge-yellow">Yellow</span></td><td>Increased vigilance</td></tr>
+    <tr><td>0.50 – 0.75</td><td>High</td><td><span class="badge badge-orange">Orange</span></td><td>Preventive brush-cutting, patrol priority</td></tr>
+    <tr><td>0.75 – 1.0</td><td>Critical</td><td><span class="badge badge-red">Red</span></td><td>Emergency alert, resource pre-positioning</td></tr>
+  </table>
+</div>
+
+<h3>7.2 Input Features (Data Layer Dictionary)</h3>
+<table>
+  <tr><th>Data Source</th><th>Variable</th><th>Purpose</th><th>Temporal Resolution</th></tr>
+  <tr><td>Sentinel-2 (Multispectral)</td><td>NDVI / Moisture index</td><td>Biomass density &amp; vegetation health — primary fuel indicator</td><td>5 days (revisit cycle)</td></tr>
+  <tr><td>Sentinel-3 / MODIS</td><td>LST (Land Surface Temperature)</td><td>Heat accumulation — real-time thermal anomaly detection (pre-ignition)</td><td>Daily</td></tr>
+  <tr><td>DEM — SRTM</td><td>Slope / Aspect</td><td>Topography — fire spread speed (fires accelerate uphill)</td><td>Static (one-time)</td></tr>
+  <tr><td>AEMET API</td><td>Wind speed, humidity, precipitation</td><td>Weather forcing — hyperlocal dynamic conditions</td><td>Hourly (real-time)</td></tr>
+</table>
+<p style="margin-top:6px"><strong>Key improvement over reference paper:</strong> We add real-time thermal input (Sentinel-3/MODIS LST) and live weather data (AEMET), which the reference paper lacked. This transforms the model from <em>static long-term susceptibility</em> to <em>dynamic daily risk prediction</em> — a critical requirement from our user interviews.</p>
+
+<h3>7.3 Training Pipeline</h3>
+<div class="section-card">
+  <p><strong>Platform:</strong> Google Earth Engine (GEE) — cloud processing, no heavy local infrastructure needed.</p>
+  <ol style="margin-top:8px">
+    <li><strong>Define study area:</strong> Ourense province boundary polygon in GEE (swap from reference paper's Gangwon-do region)</li>
+    <li><strong>Collect training labels:</strong>
+      <ul>
+        <li><strong>Positive samples (fire = 1):</strong> Historical fire perimeters from EFFIS (European Forest Fire Information System) and NASA FIRMS hotspot archive for Ourense (2015–2025)</li>
+        <li><strong>Negative samples (fire = 0):</strong> Randomly sampled points from non-burned areas, balanced 1:1 ratio with positive samples</li>
+      </ul>
+    </li>
+    <li><strong>Extract features per sample point:</strong>
+      <ul>
+        <li>NDVI from Sentinel-2 composites (median of fire season: June–September)</li>
+        <li>Slope and aspect from SRTM DEM (30m resolution)</li>
+        <li>LST from MODIS/Sentinel-3 (mean of fire season)</li>
+        <li>Distance to roads, distance to urban areas (auxiliary spatial features)</li>
+      </ul>
+    </li>
+    <li><strong>Train/test split:</strong> 70% training / 30% testing, stratified by fire/no-fire class</li>
+    <li><strong>Train Random Forest in GEE:</strong>
+      <ul>
+        <li><code>ee.Classifier.smileRandomForest(numberOfTrees: 100)</code></li>
+        <li>Variable importance ranking to validate which features drive predictions</li>
+      </ul>
+    </li>
+    <li><strong>Evaluate:</strong> AUC-ROC, confusion matrix, overall accuracy. Target: AUC &ge; 0.80</li>
+    <li><strong>Generate prediction map:</strong> Classify every pixel in Ourense → export as GeoTIFF risk layer</li>
+  </ol>
+</div>
+
+<h3>7.4 From Static to Dynamic (Real-Time Layer)</h3>
+<div class="section-card">
+  <p>The base Random Forest model produces a <strong>structural susceptibility map</strong> (which areas are inherently fire-prone). To deliver <strong>daily dynamic risk</strong>, we overlay real-time modifiers:</p>
+  <table>
+    <tr><th>Modifier</th><th>Source</th><th>Effect on Risk Score</th></tr>
+    <tr><td>Current temperature &gt; 35°C</td><td>AEMET API</td><td>+0.15 to base score</td></tr>
+    <tr><td>Humidity &lt; 30%</td><td>AEMET API</td><td>+0.10 to base score</td></tr>
+    <tr><td>Wind speed &gt; 30 km/h</td><td>AEMET API</td><td>+0.10 to base score</td></tr>
+    <tr><td>No rain in last 7 days</td><td>AEMET API</td><td>+0.10 to base score</td></tr>
+    <tr><td>Active thermal anomaly nearby</td><td>FIRMS / MODIS LST</td><td>+0.20 to base score</td></tr>
+  </table>
+  <p style="margin-top:8px"><strong>Final dynamic risk = clamp(base_score + modifiers, 0, 1)</strong></p>
+  <p>This approach gives users the "where will the danger be <em>this afternoon</em>" predictions that forest agent Rafael explicitly requested.</p>
+</div>
+
+<h3>7.5 Model Update Cycle</h3>
+<ul>
+  <li><strong>Base model retrain:</strong> Annually (after each fire season, add new fire perimeters to training set)</li>
+  <li><strong>NDVI / vegetation layer:</strong> Updated every 5 days (Sentinel-2 revisit)</li>
+  <li><strong>Weather modifiers:</strong> Updated hourly (AEMET API)</li>
+  <li><strong>Thermal anomalies:</strong> Updated every 6 hours (FIRMS near-real-time)</li>
+</ul>
+
+<h3>7.6 Validation Strategy</h3>
+<div class="section-card">
+  <ul>
+    <li><strong>Quantitative:</strong> AUC-ROC &ge; 0.80, precision/recall per risk class, spatial cross-validation (leave-one-municipality-out)</li>
+    <li><strong>Qualitative:</strong> Validation with stakeholders — show predicted risk maps to Rafael (forest agent) and Maria (council officer) and compare against their field knowledge of high-risk zones</li>
+    <li><strong>Temporal holdout:</strong> Train on 2015–2023 fires, test on 2024–2025 fires to confirm temporal generalization</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<h2>8. API Integration Points (Future)</h2>
+<table>
+  <tr><th>API</th><th>Purpose</th><th>Env Variable</th></tr>
+  <tr><td>AEMET</td><td>Real-time weather data for Ourense</td><td><code>AEMET_API_KEY</code></td></tr>
+  <tr><td>NASA FIRMS</td><td>Active fire satellite detections</td><td><code>FIRMS_MAP_KEY</code></td></tr>
+</table>
+<p>For the prototype, all data is mocked. API routes can be added at <code>src/app/api/weather/route.ts</code> and <code>src/app/api/fires/route.ts</code>.</p>
+
+<h2>9. Final File Structure</h2>
+<pre>src/
+├── app/
+│   ├── layout.tsx          # Root layout, Geist fonts, metadata
+│   ├── page.tsx            # Main dashboard page
+│   ├── globals.css         # Dark theme, Leaflet overrides
+│   └── favicon.ico
+├── components/
+│   ├── FireMap.tsx          # Leaflet map with risk zones
+│   ├── Sidebar.tsx          # Sidebar container
+│   ├── RiskSummary.tsx      # Traffic-light risk overview
+│   ├── WeatherPanel.tsx     # Weather conditions panel
+│   ├── AlertsPanel.tsx      # Active warnings
+│   ├── ZoneList.tsx         # Monitored zones list
+│   └── RiskChart.tsx        # Recharts trend charts
+└── lib/
+    ├── utils.ts             # cn() helper
+    └── mock-data.ts         # Prototype mock datasets</pre>
+
+<h2>10. Build &amp; Run</h2>
+<pre>npm run dev      # Dev server → http://localhost:4000
+npm run build    # Production build
+npm run start    # Production server → http://localhost:4000</pre>
+
+<div class="footer">
+  Fire Watch Ourense — Perspectives on AI &amp; Sustainability — ESADE 2026<br>
+  Team: Nono Lamúa, Rafa Moro, Francis Climent, Pablo Muñoz, Marc Cano
+</div>
+
+</body>
+</html>

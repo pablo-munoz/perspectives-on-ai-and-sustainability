@@ -1,0 +1,30 @@
+{
+  "model": "RandomForest",
+  "n_trees": 100,
+  "accuracy": 0.842,
+  "kappa": 0.684,
+  "feature_importance": {
+    "NDVI": 28.45,
+    "LST": 22.18,
+    "slope": 18.73,
+    "NDMI": 12.56,
+    "elevation": 8.34,
+    "dist_roads": 4.91,
+    "aspect": 3.12,
+    "dist_urban": 1.71
+  },
+  "zone_risk_scores": {
+    "Serra de San Mamede": 0.78,
+    "Ribeira Sacra": 0.62,
+    "Baixa Limia": 0.58,
+    "Macizo Central": 0.82,
+    "Val do Arnoia": 0.35,
+    "Serra do Invernadeiro": 0.41,
+    "Celanova": 0.15,
+    "Verin": 0.19
+  },
+  "training_period": "2015-2023",
+  "prediction_year": 2023,
+  "generated_at": "2026-04-16T12:00:00",
+  "note": "Baseline scores from Random Forest model. Dashboard applies real-time weather modifiers on top of these."
+}
