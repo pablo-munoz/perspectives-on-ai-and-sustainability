@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
-import { fetchFirms, fetchWeather } from "@/lib/data-sources";
+import { fetchFirms, fetchWeatherCached } from "@/lib/data-sources";
 
 interface DerivedAlert {
   id: string;
@@ -11,9 +11,6 @@ interface DerivedAlert {
   timestamp: string;
 }
 
-const cachedWeather = unstable_cache(fetchWeather, ["weather-aemet"], {
-  revalidate: 300,
-});
 const cachedFirms = unstable_cache(fetchFirms, ["firms-ourense"], {
   revalidate: 600,
 });
@@ -23,7 +20,7 @@ export async function GET() {
   const alerts: DerivedAlert[] = [];
 
   try {
-    const [weather, firms] = await Promise.all([cachedWeather(), cachedFirms()]);
+    const [weather, firms] = await Promise.all([fetchWeatherCached(), cachedFirms()]);
 
     if (weather.temperature != null) {
       if (weather.temperature >= 35) {

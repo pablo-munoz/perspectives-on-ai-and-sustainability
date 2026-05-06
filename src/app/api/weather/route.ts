@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
-import { unstable_cache } from "next/cache";
-import { fetchWeather } from "@/lib/data-sources";
-
-const cachedWeather = unstable_cache(fetchWeather, ["weather-aemet"], {
-  revalidate: 300,
-  tags: ["weather"],
-});
+import { fetchWeatherCached } from "@/lib/data-sources";
 
 export async function GET() {
-  const data = await cachedWeather();
+  const data = await fetchWeatherCached();
   return NextResponse.json(data);
 }
