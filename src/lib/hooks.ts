@@ -178,6 +178,103 @@ export function refreshAll() {
   ]);
 }
 
+export type HistoryRange = "7d" | "30d" | "90d";
+
+export interface AggregateHistoryPoint {
+  ts: string;
+  avg: number;
+  peak: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export interface ZoneHistoryPoint {
+  ts: string;
+  score: number | null;
+  base: number | null;
+}
+
+export interface HistoryResponse<T> {
+  range: HistoryRange;
+  bucketMinutes: number;
+  samples: number;
+  persistent: boolean;
+  series: T[];
+}
+
+export interface ForecastResponse {
+  fiveYearBaseline: { value: number; source: string };
+  currentSeasonal: { value: number | null; source: string };
+  predicted48h: { value: number | null; source: string };
+  timestamp: string;
+}
+
+export function useForecast() {
+  const { data, error, isLoading } = useSWR<ForecastResponse>(
+    "/api/forecast",
+    fetcher,
+    {
+      refreshInterval: 30 * 60 * 1000,
+      revalidateOnFocus: false,
+    }
+  );
+  return { forecast: data, error, isLoading };
+}
+
+export interface ArchivedAlert extends DerivedAlert {
+  dismissedAt: string;
+  resolution?: string;
+}
+
+export interface ArchiveResponse {
+  archived: ArchivedAlert[];
+  count: number;
+  persistent: boolean;
+}
+
+export function useArchivedAlerts() {
+  const { data, error, isLoading, mutate: refresh } = useSWR<ArchiveResponse>(
+    "/api/alerts/archive",
+    fetcher,
+    {
+      refreshInterval: 60_000,
+      revalidateOnFocus: false,
+    }
+  );
+  return { archive: data, error, isLoading, refresh };
+}
+
+export async function archiveAlert(
+  alert: DerivedAlert,
+  resolution?: string
+): Promise<void> {
+  const res = await fetch("/api/alerts/archive", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...alert, resolution }),
+  });
+  if (!res.ok) throw new Error(`archive failed: ${res.status}`);
+  await mutate("/api/alerts/archive");
+}
+
+export function useHistory<
+  T extends AggregateHistoryPoint | ZoneHistoryPoint = AggregateHistoryPoint
+>(range: HistoryRange, zoneId?: string) {
+  const url = `/api/history?range=${range}${zoneId ? `&zone=${zoneId}` : ""}`;
+  const { data, error, isLoading, mutate: refresh } = useSWR<HistoryResponse<T>>(
+    url,
+    fetcher,
+    {
+      refreshInterval: 5 * 60 * 1000,
+      revalidateOnFocus: false,
+      dedupingInterval: 60_000,
+    }
+  );
+  return { history: data, error, isLoading, refresh };
+}
+
 export function timeAgo(iso: string | undefined | null): string {
   if (!iso) return "—";
   const then = new Date(iso).getTime();

@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/Card";
 import { useRisk, useWeather } from "@/lib/hooks";
+import { nelsonFMC } from "@/lib/fmc";
 import { useMemo } from "react";
 
 interface BarRowProps {
@@ -66,9 +67,12 @@ export default function RiskSummaryFloat() {
   }, [risk]);
 
   const lst = weather?.temperature ?? null;
-  const fmc = weather?.humidity != null
-    ? Math.max(4, Math.min(30, weather.humidity * 0.55))
-    : null;
+  const fmcResult = nelsonFMC({
+    tempC: weather?.temperature ?? null,
+    humidityPct: weather?.humidity ?? null,
+    precipMm24h: weather?.precipitation ?? null,
+  });
+  const fmc = Number.isFinite(fmcResult.value) ? fmcResult.value : null;
 
   const peakLabel: Record<string, { text: string; class: string }> = {
     critical: { text: "Extreme", class: "text-[var(--color-critical)]" },

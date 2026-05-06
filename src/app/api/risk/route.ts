@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { fetchFirms, fetchWeather } from "@/lib/data-sources";
-import { computeDynamicRisk, getModelInfo } from "@/lib/risk-engine";
+import {
+  computeDynamicRisk,
+  computeDynamicRiskLive,
+  getModelInfo,
+} from "@/lib/risk-engine";
 
 const ZONE_CENTERS: Record<string, [number, number]> = {
   z1: [42.3, -7.935],
@@ -44,7 +48,7 @@ export async function GET() {
 
     const activeHotspotZones = detectHotspotZones(firms.hotspots);
 
-    const zones = computeDynamicRisk(
+    const zones = await computeDynamicRiskLive(
       {
         temperature: weather.temperature,
         humidity: weather.humidity,
