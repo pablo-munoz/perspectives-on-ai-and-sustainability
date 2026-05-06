@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
-import { fetchFirms, fetchWeather } from "@/lib/data-sources";
+import { fetchFirms, fetchWeatherCached } from "@/lib/data-sources";
 import {
   computeDynamicRisk,
   computeDynamicRiskLive,
@@ -33,9 +33,6 @@ function detectHotspotZones(hotspots: Array<{ lat: number; lng: number }>): stri
   return Array.from(affected);
 }
 
-const cachedWeather = unstable_cache(fetchWeather, ["weather-aemet"], {
-  revalidate: 300,
-});
 const cachedFirms = unstable_cache(fetchFirms, ["firms-ourense"], {
   revalidate: 600,
 });
@@ -44,7 +41,7 @@ export async function GET() {
   const timestamp = new Date().toISOString();
 
   try {
-    const [weather, firms] = await Promise.all([cachedWeather(), cachedFirms()]);
+    const [weather, firms] = await Promise.all([fetchWeatherCached(), cachedFirms()]);
 
     const activeHotspotZones = detectHotspotZones(firms.hotspots);
 

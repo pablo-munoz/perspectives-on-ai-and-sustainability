@@ -61,6 +61,36 @@ function parseConfidence(raw: string): { value: number; label: string } {
   return { value: 50, label: "nominal" };
 }
 
+const WEATHER_CACHE_KEY = "weather:cache";
+const WEATHER_SOFT_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * Wrapper around `fetchWeather` that caches successful responses in Upstash KV
+ * and serves stale data when AEMET is rate-limited (429) or otherwise down.
+ *
+ * Why not `unstable_cache`: it caches *every* return value including the
+ * `source: "Unavailable"` failure object, freezing the dashboard for the full
+ * TTL when AEMET 429s. KV-backed cache lets us only persist successes.
+ */
+export async function fetchWeatherCached(): Promise<LiveWeather> {
+  const { kv } = await import("./kv");
+  const store = kv();
+  const cached = await store.get<LiveWeather>(WEATHER_CACHE_KEY);
+
+  if (cached && cached.lastUpdated) {
+    const age = Date.now() - new Date(cached.lastUpdated).getTime();
+    if (age < WEATHER_SOFT_TTL_MS) return cached;
+  }
+
+  const fresh = await fetchWeather();
+  if (fresh.source !== "Unavailable") {
+    await store.set(WEATHER_CACHE_KEY, fresh, { ex: 3600 });
+    return fresh;
+  }
+
+  return cached ?? fresh;
+}
+
 export async function fetchWeather(): Promise<LiveWeather> {
   const key = process.env.AEMET_API_KEY;
   const lastUpdated = new Date().toISOString();

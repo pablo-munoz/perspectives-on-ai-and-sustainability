@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFirms, fetchWeather } from "@/lib/data-sources";
+import { fetchFirms, fetchWeatherCached } from "@/lib/data-sources";
 import { computeDynamicRiskLive } from "@/lib/risk-engine";
 import { kv } from "@/lib/kv";
 
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
   }
 
   const startedAt = new Date();
-  const [weather, firms] = await Promise.all([fetchWeather(), fetchFirms()]);
+  const [weather, firms] = await Promise.all([fetchWeatherCached(), fetchFirms()]);
   const hotspotZones = detectHotspotZones(firms.hotspots);
 
   const zones = await computeDynamicRiskLive(
