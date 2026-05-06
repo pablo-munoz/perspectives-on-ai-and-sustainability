@@ -1,30 +1,66 @@
 {
   "model": "RandomForest",
-  "n_trees": 100,
-  "accuracy": 0.842,
-  "kappa": 0.684,
+  "n_trees": 200,
+  "accuracy": 0.6667,
+  "kappa": 0.3333,
+  "precision": 0.6543,
+  "recall": 0.7067,
+  "f1": 0.6795,
+  "auc": 0.7436,
+  "confusion_matrix": [
+    [
+      94,
+      56
+    ],
+    [
+      44,
+      106
+    ]
+  ],
+  "samples": {
+    "total": 1200,
+    "training": 900,
+    "validation": 300,
+    "positive": 600,
+    "negative": 600
+  },
   "feature_importance": {
-    "NDVI": 28.45,
-    "LST": 22.18,
-    "slope": 18.73,
-    "NDMI": 12.56,
-    "elevation": 8.34,
-    "dist_roads": 4.91,
-    "aspect": 3.12,
-    "dist_urban": 1.71
+    "LST": 20.6528,
+    "dist_urban": 16.864,
+    "elevation": 16.2705,
+    "NDMI": 12.7063,
+    "NDVI": 12.3116,
+    "slope": 10.9069,
+    "aspect": 10.288,
+    "dist_roads": 0.0
   },
   "zone_risk_scores": {
-    "Serra de San Mamede": 0.78,
-    "Ribeira Sacra": 0.62,
-    "Baixa Limia": 0.58,
-    "Macizo Central": 0.82,
-    "Val do Arnoia": 0.35,
-    "Serra do Invernadeiro": 0.41,
-    "Celanova": 0.15,
-    "Verin": 0.19
+    "Serra de San Mamede": 0.2445,
+    "Ribeira Sacra": 0.1903,
+    "Baixa Limia": 0.7105,
+    "Macizo Central": 0.1341,
+    "Val do Arnoia": 0.1337,
+    "Serra do Invernadeiro": 0.3376,
+    "Celanova": 0.0999,
+    "Verin": 0.4181
   },
-  "training_period": "2015-2023",
-  "prediction_year": 2023,
-  "generated_at": "2026-04-16T12:00:00",
-  "note": "Baseline scores from Random Forest model. Dashboard applies real-time weather modifiers on top of these."
+  "training_period": "2015-2024",
+  "feature_year": 2024,
+  "feature_order": [
+    "NDVI",
+    "NDMI",
+    "LST",
+    "slope",
+    "aspect",
+    "elevation",
+    "dist_roads",
+    "dist_urban"
+  ],
+  "artifacts": {
+    "sklearn_pkl": "ml/artifacts/fire_risk_rf.pkl",
+    "onnx_available": false,
+    "onnx_path": null
+  },
+  "generated_at": "2026-05-06T11:29:55.364090Z",
+  "note": "Real metrics from sklearn RandomForest on a 300-sample held-out validation set. Zone scores are predictions on the per-zone mean feature vector."
 }

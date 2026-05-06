@@ -19,6 +19,7 @@
 
 import type { RiskLevel } from "./mock-data";
 import modelOutput from "./model-output.json";
+import { predictAllZonesStatic } from "./ml";
 
 export interface WeatherConditions {
   temperature: number | null;
@@ -44,18 +45,6 @@ export interface ModelInfo {
   featureImportance: Record<string, number>;
   trainingPeriod: string;
 }
-
-// Zone ID mapping to model output names
-const ZONE_NAME_MAP: Record<string, string> = {
-  z1: "Serra de San Mamede",
-  z2: "Ribeira Sacra",
-  z3: "Baixa Limia",
-  z4: "Macizo Central",
-  z5: "Val do Arnoia",
-  z6: "Serra do Invernadeiro",
-  z7: "Celanova",
-  z8: "Verin",
-};
 
 /**
  * Calculate weather-based risk modifier.
@@ -126,34 +115,34 @@ export function scoreToRiskLevel(score: number): RiskLevel {
 }
 
 /**
- * Compute dynamic risk for all zones using base ML scores + live weather.
+ * Compute dynamic risk for all zones.
+ *
+ * baseScore comes from running the trained Random Forest at runtime
+ * (`predictAllZonesStatic`) on each zone's static feature vector. The weather
+ * modifier (temp/humidity/wind/precip + active hotspot proximity) is then
+ * stacked on top.
  */
 export function computeDynamicRisk(
   weather: WeatherConditions,
   activeHotspotZones: string[] = []
 ): DynamicRiskResult[] {
-  const zoneScores = modelOutput.zone_risk_scores as Record<string, number>;
+  const predictions = predictAllZonesStatic();
 
-  const results: DynamicRiskResult[] = Object.entries(ZONE_NAME_MAP).map(
-    ([zoneId, zoneName]) => {
-      const baseScore = zoneScores[zoneName] ?? 0.5;
-      const hasHotspot = activeHotspotZones.includes(zoneId);
+  const results: DynamicRiskResult[] = predictions.map((p) => {
+    const hasHotspot = activeHotspotZones.includes(p.zoneId);
+    const { modifier, applied } = calculateWeatherModifier(weather, hasHotspot);
+    const dynamicScore = Math.min(1, Math.max(0, p.baseScore + modifier));
 
-      const { modifier, applied } = calculateWeatherModifier(weather, hasHotspot);
-
-      const dynamicScore = Math.min(1, Math.max(0, baseScore + modifier));
-
-      return {
-        zoneId,
-        zoneName,
-        baseScore,
-        weatherModifier: modifier,
-        dynamicScore,
-        riskLevel: scoreToRiskLevel(dynamicScore),
-        modifiersApplied: applied,
-      };
-    }
-  );
+    return {
+      zoneId: p.zoneId,
+      zoneName: p.zoneName,
+      baseScore: p.baseScore,
+      weatherModifier: modifier,
+      dynamicScore,
+      riskLevel: scoreToRiskLevel(dynamicScore),
+      modifiersApplied: applied,
+    };
+  });
 
   return results.sort((a, b) => b.dynamicScore - a.dynamicScore);
 }
