@@ -19,6 +19,19 @@
 
 import type { RiskLevel } from "./mock-data";
 import modelOutput from "./model-output.json";
+import {
+  predictAllZonesStatic,
+  predictZoneWithOverrides,
+} from "./ml";
+import { kv } from "./kv";
+
+interface LiveZoneFeatures {
+  zoneId: string;
+  ndvi: number | null;
+  ndmi: number | null;
+  lst: number | null;
+  asOf: string;
+}
 
 export interface WeatherConditions {
   temperature: number | null;
@@ -44,18 +57,6 @@ export interface ModelInfo {
   featureImportance: Record<string, number>;
   trainingPeriod: string;
 }
-
-// Zone ID mapping to model output names
-const ZONE_NAME_MAP: Record<string, string> = {
-  z1: "Serra de San Mamede",
-  z2: "Ribeira Sacra",
-  z3: "Baixa Limia",
-  z4: "Macizo Central",
-  z5: "Val do Arnoia",
-  z6: "Serra do Invernadeiro",
-  z7: "Celanova",
-  z8: "Verin",
-};
 
 /**
  * Calculate weather-based risk modifier.
@@ -126,33 +127,84 @@ export function scoreToRiskLevel(score: number): RiskLevel {
 }
 
 /**
- * Compute dynamic risk for all zones using base ML scores + live weather.
+ * Compute dynamic risk for all zones.
+ *
+ * baseScore comes from running the trained Random Forest at runtime
+ * (`predictAllZonesStatic`) on each zone's static feature vector. The weather
+ * modifier (temp/humidity/wind/precip + active hotspot proximity) is then
+ * stacked on top.
+ *
+ * Synchronous fallback path — uses training-time static features only.
  */
 export function computeDynamicRisk(
   weather: WeatherConditions,
   activeHotspotZones: string[] = []
 ): DynamicRiskResult[] {
-  const zoneScores = modelOutput.zone_risk_scores as Record<string, number>;
+  const predictions = predictAllZonesStatic();
 
-  const results: DynamicRiskResult[] = Object.entries(ZONE_NAME_MAP).map(
-    ([zoneId, zoneName]) => {
-      const baseScore = zoneScores[zoneName] ?? 0.5;
-      const hasHotspot = activeHotspotZones.includes(zoneId);
+  const results: DynamicRiskResult[] = predictions.map((p) => {
+    const hasHotspot = activeHotspotZones.includes(p.zoneId);
+    const { modifier, applied } = calculateWeatherModifier(weather, hasHotspot);
+    const dynamicScore = Math.min(1, Math.max(0, p.baseScore + modifier));
 
+    return {
+      zoneId: p.zoneId,
+      zoneName: p.zoneName,
+      baseScore: p.baseScore,
+      weatherModifier: modifier,
+      dynamicScore,
+      riskLevel: scoreToRiskLevel(dynamicScore),
+      modifiersApplied: applied,
+    };
+  });
+
+  return results.sort((a, b) => b.dynamicScore - a.dynamicScore);
+}
+
+/**
+ * Compute dynamic risk using LIVE features per zone when available in KV.
+ *
+ * For each zone, attempts to read `features:zone:{zoneId}` from Upstash and
+ * use those NDVI/NDMI/LST values to override the training-time static feature
+ * vector before running RF inference. Zones without live features fall back
+ * to the static prediction.
+ */
+export async function computeDynamicRiskLive(
+  weather: WeatherConditions,
+  activeHotspotZones: string[] = []
+): Promise<DynamicRiskResult[]> {
+  const predictions = predictAllZonesStatic();
+  const store = kv();
+
+  const results = await Promise.all(
+    predictions.map(async (p): Promise<DynamicRiskResult> => {
+      const live = await store.get<LiveZoneFeatures>(`features:zone:${p.zoneId}`);
+
+      let baseScore = p.baseScore;
+      if (live) {
+        const overrides: Record<string, number> = {};
+        if (live.ndvi != null) overrides.NDVI = live.ndvi;
+        if (live.ndmi != null) overrides.NDMI = live.ndmi;
+        if (live.lst != null) overrides.LST = live.lst;
+        if (Object.keys(overrides).length > 0) {
+          baseScore = predictZoneWithOverrides(p.zoneId, overrides);
+        }
+      }
+
+      const hasHotspot = activeHotspotZones.includes(p.zoneId);
       const { modifier, applied } = calculateWeatherModifier(weather, hasHotspot);
-
       const dynamicScore = Math.min(1, Math.max(0, baseScore + modifier));
 
       return {
-        zoneId,
-        zoneName,
+        zoneId: p.zoneId,
+        zoneName: p.zoneName,
         baseScore,
         weatherModifier: modifier,
         dynamicScore,
         riskLevel: scoreToRiskLevel(dynamicScore),
         modifiersApplied: applied,
       };
-    }
+    })
   );
 
   return results.sort((a, b) => b.dynamicScore - a.dynamicScore);

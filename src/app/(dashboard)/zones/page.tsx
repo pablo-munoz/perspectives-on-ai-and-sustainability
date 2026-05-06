@@ -4,28 +4,39 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Button } from "@/components/ui/Button";
 import { ToolbarChip } from "@/components/ui/Toolbar";
 import { AddZoneCard, ZoneCard } from "@/components/zones/ZoneCard";
-import { useAlerts, useRisk, useWeather } from "@/lib/hooks";
+import { useAlerts, useFirms, useRisk, useWeather } from "@/lib/hooks";
 import { riskZones } from "@/lib/mock-data";
 import { Plus, Filter, ArrowDownUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+const ZONE_BBOX_DEG = 0.06; // ~6 km half-side around zone center for hotspot count
+
 export default function ZonesPage() {
   const { risk } = useRisk();
   const { weather } = useWeather();
   const { alerts } = useAlerts();
+  const { firms } = useFirms();
   const [sortByRisk, setSortByRisk] = useState(true);
 
   const enriched = useMemo(() => {
+    const hotspots = firms?.hotspots ?? [];
     return riskZones.map((z) => {
       const live = risk?.zones?.find((d) => d.zoneId === z.id);
+      const [zlat, zlng] = z.center;
+      const hotspotsInZone = hotspots.filter(
+        (h) =>
+          Math.abs(h.lat - zlat) < ZONE_BBOX_DEG &&
+          Math.abs(h.lng - zlng) < ZONE_BBOX_DEG
+      ).length;
       return {
         zone: z,
         liveLevel: live?.riskLevel ?? z.riskLevel,
         liveScore: live?.dynamicScore ?? z.riskScore,
+        hotspotsInZone,
       };
     });
-  }, [risk]);
+  }, [risk, firms]);
 
   const sorted = useMemo(() => {
     return sortByRisk
@@ -88,14 +99,13 @@ export default function ZonesPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {sorted.map(({ zone, liveLevel }, i) => (
+        {sorted.map(({ zone, liveLevel, hotspotsInZone }) => (
           <ZoneCard
             key={zone.id}
             zone={zone}
             liveLevel={liveLevel}
             weather={weather}
-            sensorsActive={20 + ((i * 3) % 5)}
-            sensorsTotal={24}
+            hotspotsInZone={hotspotsInZone}
           />
         ))}
         <AddZoneCard />

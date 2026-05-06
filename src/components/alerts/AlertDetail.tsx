@@ -2,10 +2,16 @@
 
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { useFirms, useWeather } from "@/lib/hooks";
+import { archiveAlert, useFirms, useWeather } from "@/lib/hooks";
 import type { DerivedAlert } from "@/lib/hooks";
-import { Megaphone, X, Layers } from "lucide-react";
+import { Megaphone, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import { toast } from "sonner";
+
+const SatelliteView = dynamic(
+  () => import("@/components/alerts/SatelliteView"),
+  { ssr: false }
+);
 
 interface AlertDetailProps {
   alert: DerivedAlert;
@@ -47,7 +53,20 @@ export function AlertDetail({ alert, onDismiss }: AlertDetailProps) {
               <Megaphone className="w-3.5 h-3.5" />
               Emergency Broadcast
             </Button>
-            <Button variant="outline" size="sm" onClick={onDismiss}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await archiveAlert(alert, "Dismissed by operator");
+                  toast.success("Alert archived");
+                } catch (err) {
+                  toast.error("Failed to archive alert");
+                  console.error(err);
+                }
+                onDismiss();
+              }}
+            >
               <X className="w-3.5 h-3.5" />
               Dismiss Alert
             </Button>
@@ -115,70 +134,99 @@ export function AlertDetail({ alert, onDismiss }: AlertDetailProps) {
               MODIS-Terra · {dt.toUTCString().slice(17, 22)} Orbit
             </span>
           </div>
-          <div
-            className="relative flex-1 min-h-[220px]"
-            style={{
-              background:
-                "radial-gradient(circle at 60% 45%, rgba(255,107,26,0.45), rgba(230,57,70,0.25) 30%, transparent 60%), radial-gradient(circle at 30% 70%, rgba(74,158,255,0.15), transparent 50%), #050608",
-            }}
-          >
-            <svg
-              className="absolute inset-0 w-full h-full opacity-40"
-              viewBox="0 0 200 100"
-              preserveAspectRatio="none"
-            >
-              {Array.from({ length: 14 }).map((_, i) => (
-                <path
-                  key={i}
-                  d={`M0 ${10 + i * 6} Q 50 ${(i * 13) % 35} 100 ${
-                    20 + i * 5
-                  } T 200 ${15 + i * 6}`}
-                  fill="none"
-                  stroke="white"
-                  strokeOpacity="0.2"
-                  strokeWidth="0.4"
-                />
-              ))}
-            </svg>
-            {hotspot && (
-              <div
-                className="absolute hotspot-pulse hotspot-high"
-                style={{ left: "58%", top: "42%" }}
-              >
-                <div className="hotspot-core" />
-              </div>
-            )}
-            <button className="absolute bottom-3 right-3 h-8 w-8 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-fg-muted)]">
-              <Layers className="w-4 h-4" />
-            </button>
+          <div className="relative flex-1 min-h-[220px] bg-black overflow-hidden">
+            <SatelliteView
+              lat={hotspot?.lat ?? null}
+              lng={hotspot?.lng ?? null}
+              layer="MODIS_Terra"
+            />
           </div>
         </Card>
       </div>
 
-      {/* Deployed resources */}
+      {/* Recent satellite detections (FIRMS) */}
+      <RecentDetections />
+    </div>
+  );
+}
+
+function RecentDetections() {
+  const { firms } = useFirms();
+  const hotspots = (firms?.hotspots ?? []).slice(0, 4);
+
+  if (hotspots.length === 0) {
+    return (
       <Card variant="elevated" className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="section-label">Deployed Resources</div>
-          <button className="text-[10px] uppercase tracking-[0.14em] text-[var(--color-accent)] font-semibold hover:text-[var(--color-accent-hi)]">
-            Manage Units
-          </button>
-        </div>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <ResourceTile
-            icon="🚒"
-            name="Engine 12, 14"
-            status="ETA 12 min"
-            tone="warning"
-          />
-          <ResourceTile
-            icon="🚁"
-            name="Air-Attack 4"
-            status="In Transit"
-            tone="warning"
-          />
-          <ResourceTile icon="👷" name="Crew Charlie" status="On Scene" tone="success" />
-        </div>
+        <div className="section-label">Recent Detections</div>
+        <p className="mt-3 text-sm text-[var(--color-fg-muted)]">
+          No active fire detections in the FIRMS feed for this region.
+        </p>
       </Card>
+    );
+  }
+
+  return (
+    <Card variant="elevated" className="p-5">
+      <div className="flex items-center justify-between">
+        <div className="section-label">Recent Detections · {firms?.source ?? "FIRMS"}</div>
+        <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
+          {firms?.count ?? hotspots.length} total
+        </span>
+      </div>
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {hotspots.map((h) => (
+          <DetectionTile
+            key={h.id}
+            satellite={h.satellite}
+            confidence={h.confidence}
+            confidenceLabel={h.confidenceLabel}
+            brightness={h.brightness}
+            timestamp={h.timestamp}
+          />
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function DetectionTile({
+  satellite,
+  confidence,
+  confidenceLabel,
+  brightness,
+  timestamp,
+}: {
+  satellite: string;
+  confidence: number;
+  confidenceLabel: string;
+  brightness: number;
+  timestamp: string;
+}) {
+  const tone =
+    confidenceLabel === "high"
+      ? "border-[var(--color-critical)]/30 bg-[var(--color-critical-soft)] text-[var(--color-critical)]"
+      : confidenceLabel === "low"
+      ? "border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] text-[var(--color-warning)]"
+      : "border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] text-[var(--color-accent)]";
+  const ts = new Date(timestamp);
+  const when = `${ts.getUTCHours().toString().padStart(2, "0")}:${ts
+    .getUTCMinutes()
+    .toString()
+    .padStart(2, "0")}Z`;
+  return (
+    <div className={`rounded-lg border ${tone} px-3 py-3`}>
+      <div className="text-[10px] uppercase tracking-[0.14em] font-semibold opacity-80">
+        {satellite}
+      </div>
+      <div className="mt-1 flex items-baseline gap-2 text-[var(--color-fg)]">
+        <span className="font-display text-xl font-semibold tabular">
+          {confidence.toFixed(0)}
+        </span>
+        <span className="text-xs opacity-70">% conf</span>
+      </div>
+      <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-muted)]">
+        {brightness.toFixed(0)} K · {when}
+      </div>
     </div>
   );
 }
@@ -224,36 +272,3 @@ function Telemetry({
   );
 }
 
-function ResourceTile({
-  icon,
-  name,
-  status,
-  tone,
-}: {
-  icon: string;
-  name: string;
-  status: string;
-  tone: "warning" | "success";
-}) {
-  const cls =
-    tone === "warning"
-      ? "border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)]"
-      : "border-[var(--color-success)]/30 bg-[var(--color-success-soft)]";
-  const text =
-    tone === "warning"
-      ? "text-[var(--color-warning)]"
-      : "text-[var(--color-success)]";
-  return (
-    <div className={`rounded-lg border ${cls} px-3 py-3 flex items-center gap-3`}>
-      <div className="h-9 w-9 rounded-md bg-black/30 flex items-center justify-center text-lg">
-        {icon}
-      </div>
-      <div>
-        <div className="text-[12.5px] font-semibold">{name}</div>
-        <div className={`text-[10px] uppercase tracking-[0.14em] ${text} font-semibold`}>
-          {status}
-        </div>
-      </div>
-    </div>
-  );
-}

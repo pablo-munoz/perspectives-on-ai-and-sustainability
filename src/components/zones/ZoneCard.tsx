@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/Card";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import type { RiskZone, RiskLevel } from "@/lib/mock-data";
-import { Activity, Thermometer, Droplet, Wind, MoreVertical } from "lucide-react";
+import { Flame, Thermometer, Droplet, Wind, MoreVertical } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface ZoneCardProps {
@@ -15,8 +15,8 @@ interface ZoneCardProps {
     humidity: number | null;
     windSpeed: number | null;
   } | null;
-  sensorsActive?: number;
-  sensorsTotal?: number;
+  /** Number of FIRMS hotspots detected within the zone bounding box. */
+  hotspotsInZone?: number;
 }
 
 const gradients: Record<RiskLevel, string> = {
@@ -41,8 +41,7 @@ export function ZoneCard({
   zone,
   liveLevel,
   weather,
-  sensorsActive = 22,
-  sensorsTotal = 24,
+  hotspotsInZone = 0,
 }: ZoneCardProps) {
   const level = liveLevel ?? zone.riskLevel;
 
@@ -108,9 +107,9 @@ export function ZoneCard({
 
         <div className="mt-4 grid grid-cols-2 gap-2.5">
           <Stat
-            icon={<Activity className="w-3.5 h-3.5" />}
-            label="Active Sensors"
-            value={`${sensorsActive} / ${sensorsTotal}`}
+            icon={<Flame className="w-3.5 h-3.5" />}
+            label="Hotspots 7d"
+            value={hotspotsInZone === 0 ? "0" : `${hotspotsInZone}`}
           />
           <Stat
             icon={<Thermometer className="w-3.5 h-3.5" />}
