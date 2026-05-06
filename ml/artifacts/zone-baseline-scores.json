@@ -1,0 +1,34 @@
+{
+  "z1": {
+    "name": "Serra de San Mamede",
+    "score": 0.2445
+  },
+  "z2": {
+    "name": "Ribeira Sacra",
+    "score": 0.1903
+  },
+  "z3": {
+    "name": "Baixa Limia",
+    "score": 0.7105
+  },
+  "z4": {
+    "name": "Macizo Central",
+    "score": 0.1341
+  },
+  "z5": {
+    "name": "Val do Arnoia",
+    "score": 0.1337
+  },
+  "z6": {
+    "name": "Serra do Invernadeiro",
+    "score": 0.3376
+  },
+  "z7": {
+    "name": "Celanova",
+    "score": 0.0999
+  },
+  "z8": {
+    "name": "Verin",
+    "score": 0.4181
+  }
+}

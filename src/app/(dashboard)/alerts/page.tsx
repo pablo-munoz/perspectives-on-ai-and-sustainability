@@ -4,24 +4,16 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ToolbarChip } from "@/components/ui/Toolbar";
 import { AlertListItem } from "@/components/alerts/AlertListItem";
 import { AlertDetail } from "@/components/alerts/AlertDetail";
-import { useAlerts, useFirms } from "@/lib/hooks";
-import type { DerivedAlert } from "@/lib/hooks";
+import { useAlerts, useArchivedAlerts, useFirms } from "@/lib/hooks";
 import { Filter, ArrowDownUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-const ARCHIVED_DEMO: DerivedAlert = {
-  id: "archived-zone1",
-  type: "fire",
-  severity: "low",
-  title: "Containment Success: Zone 1",
-  description: "Sector Alpha resolved 12:42 UTC.",
-  timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-};
-
 export default function AlertsPage() {
   const { alerts } = useAlerts();
+  const { archive } = useArchivedAlerts();
   const { firms } = useFirms();
   const list = useMemo(() => alerts?.alerts ?? [], [alerts]);
+  const archived = archive?.archived ?? [];
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   useEffect(() => {
@@ -68,7 +60,17 @@ export default function AlertsPage() {
               onClick={() => setSelectedId(a.id)}
             />
           ))}
-          <AlertListItem alert={ARCHIVED_DEMO} archived />
+
+          {archived.length > 0 && (
+            <>
+              <div className="pt-3 pb-1 section-label text-[10px] text-[var(--color-fg-subtle)]">
+                Archived · {archived.length}
+              </div>
+              {archived.slice(0, 5).map((a) => (
+                <AlertListItem key={`arc-${a.id}-${a.dismissedAt}`} alert={a} archived />
+              ))}
+            </>
+          )}
         </div>
 
         <div className="lg:col-span-7 min-w-0">

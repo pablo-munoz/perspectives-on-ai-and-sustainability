@@ -9,6 +9,7 @@ import HistoricalVsPredicted from "@/components/charts/HistoricalVsPredicted";
 import ProjectionWarning from "@/components/analytics/ProjectionWarning";
 import SectorMappingContext from "@/components/analytics/SectorMappingContext";
 import { useRisk, useWeather, useFirms, timeAgo } from "@/lib/hooks";
+import { nelsonFMC } from "@/lib/fmc";
 import { Leaf, Thermometer, Droplet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useMemo } from "react";
@@ -26,10 +27,12 @@ export default function AnalyticsPage() {
   }, [risk]);
 
   const lst = weather?.temperature ?? null;
-  const fmc =
-    weather?.humidity != null
-      ? Math.max(4, Math.min(30, weather.humidity * 0.55))
-      : null;
+  const fmcResult = nelsonFMC({
+    tempC: weather?.temperature ?? null,
+    humidityPct: weather?.humidity ?? null,
+    precipMm24h: weather?.precipitation ?? null,
+  });
+  const fmc = Number.isFinite(fmcResult.value) ? fmcResult.value : null;
 
   return (
     <div className="h-full overflow-y-auto custom-scrollbar p-8 max-w-[1500px] mx-auto">
