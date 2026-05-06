@@ -19,7 +19,19 @@
 
 import type { RiskLevel } from "./mock-data";
 import modelOutput from "./model-output.json";
-import { predictAllZonesStatic } from "./ml";
+import {
+  predictAllZonesStatic,
+  predictZoneWithOverrides,
+} from "./ml";
+import { kv } from "./kv";
+
+interface LiveZoneFeatures {
+  zoneId: string;
+  ndvi: number | null;
+  ndmi: number | null;
+  lst: number | null;
+  asOf: string;
+}
 
 export interface WeatherConditions {
   temperature: number | null;
@@ -121,6 +133,8 @@ export function scoreToRiskLevel(score: number): RiskLevel {
  * (`predictAllZonesStatic`) on each zone's static feature vector. The weather
  * modifier (temp/humidity/wind/precip + active hotspot proximity) is then
  * stacked on top.
+ *
+ * Synchronous fallback path — uses training-time static features only.
  */
 export function computeDynamicRisk(
   weather: WeatherConditions,
@@ -143,6 +157,55 @@ export function computeDynamicRisk(
       modifiersApplied: applied,
     };
   });
+
+  return results.sort((a, b) => b.dynamicScore - a.dynamicScore);
+}
+
+/**
+ * Compute dynamic risk using LIVE features per zone when available in KV.
+ *
+ * For each zone, attempts to read `features:zone:{zoneId}` from Upstash and
+ * use those NDVI/NDMI/LST values to override the training-time static feature
+ * vector before running RF inference. Zones without live features fall back
+ * to the static prediction.
+ */
+export async function computeDynamicRiskLive(
+  weather: WeatherConditions,
+  activeHotspotZones: string[] = []
+): Promise<DynamicRiskResult[]> {
+  const predictions = predictAllZonesStatic();
+  const store = kv();
+
+  const results = await Promise.all(
+    predictions.map(async (p): Promise<DynamicRiskResult> => {
+      const live = await store.get<LiveZoneFeatures>(`features:zone:${p.zoneId}`);
+
+      let baseScore = p.baseScore;
+      if (live) {
+        const overrides: Record<string, number> = {};
+        if (live.ndvi != null) overrides.NDVI = live.ndvi;
+        if (live.ndmi != null) overrides.NDMI = live.ndmi;
+        if (live.lst != null) overrides.LST = live.lst;
+        if (Object.keys(overrides).length > 0) {
+          baseScore = predictZoneWithOverrides(p.zoneId, overrides);
+        }
+      }
+
+      const hasHotspot = activeHotspotZones.includes(p.zoneId);
+      const { modifier, applied } = calculateWeatherModifier(weather, hasHotspot);
+      const dynamicScore = Math.min(1, Math.max(0, baseScore + modifier));
+
+      return {
+        zoneId: p.zoneId,
+        zoneName: p.zoneName,
+        baseScore,
+        weatherModifier: modifier,
+        dynamicScore,
+        riskLevel: scoreToRiskLevel(dynamicScore),
+        modifiersApplied: applied,
+      };
+    })
+  );
 
   return results.sort((a, b) => b.dynamicScore - a.dynamicScore);
 }
