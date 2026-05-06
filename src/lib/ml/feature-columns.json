@@ -1,0 +1,10 @@
+[
+  "NDVI",
+  "NDMI",
+  "LST",
+  "slope",
+  "aspect",
+  "elevation",
+  "dist_roads",
+  "dist_urban"
+]
