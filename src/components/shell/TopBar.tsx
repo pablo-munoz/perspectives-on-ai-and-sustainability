@@ -1,10 +1,11 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Bell, Search, UserCircle2 } from "lucide-react";
+import { Bell, Menu, Search, UserCircle2 } from "lucide-react";
 import { useAlerts, useRisk } from "@/lib/hooks";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { useEffect, useMemo, useState } from "react";
+import { useMobileNav } from "./MobileNavContext";
 
 const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/map": {
@@ -37,6 +38,7 @@ export default function TopBar() {
   const { title } = useCurrentTitle();
   const { risk } = useRisk();
   const { alerts } = useAlerts();
+  const { toggle } = useMobileNav();
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -55,12 +57,21 @@ export default function TopBar() {
     alerts?.alerts?.filter((a) => a.severity === "critical").length ?? 0;
 
   return (
-    <header className="h-16 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)] flex items-center px-6 gap-6">
-      <h1 className="font-display text-lg font-semibold tracking-tight text-[var(--color-fg)]">
+    <header className="h-16 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)] flex items-center px-4 md:px-6 gap-3 md:gap-6">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label="Open navigation"
+        className="md:hidden h-9 w-9 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-fg-muted)] hover:text-[var(--color-fg)] flex items-center justify-center"
+      >
+        <Menu className="w-4 h-4" />
+      </button>
+
+      <h1 className="font-display text-base md:text-lg font-semibold tracking-tight text-[var(--color-fg)] truncate">
         {title}
       </h1>
 
-      <div className="flex-1 max-w-md mx-auto">
+      <div className="flex-1 max-w-md mx-auto hidden md:block">
         <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-fg-subtle)]">
           <Search className="w-4 h-4" />
           <input

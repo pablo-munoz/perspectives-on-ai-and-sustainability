@@ -5,6 +5,8 @@ import { StatusPill } from "@/components/ui/StatusPill";
 import { MetricCard } from "@/components/ui/MetricCard";
 import RiskIndexBars from "@/components/charts/RiskIndexBars";
 import HistoricalVsPredicted from "@/components/charts/HistoricalVsPredicted";
+import ForecastRibbon from "@/components/charts/ForecastRibbon";
+import RiskHeatmapCalendar from "@/components/charts/RiskHeatmapCalendar";
 import ProjectionWarning from "@/components/analytics/ProjectionWarning";
 import SectorMappingContext from "@/components/analytics/SectorMappingContext";
 import { useRisk, useWeather, useFirms, timeAgo } from "@/lib/hooks";
@@ -54,7 +56,11 @@ export default function AnalyticsPage() {
         }
       />
 
-      <div className="mt-8 grid grid-cols-12 gap-5">
+      <div className="mt-8">
+        <ForecastRibbon />
+      </div>
+
+      <div className="mt-5 grid grid-cols-12 gap-5">
         <div className="col-span-12 lg:col-span-8">
           <RiskIndexBars />
         </div>
@@ -111,6 +117,10 @@ export default function AnalyticsPage() {
         </div>
         <div className="col-span-12 lg:col-span-7">
           <SectorMappingContext />
+        </div>
+
+        <div className="col-span-12">
+          <RiskHeatmapCalendar />
         </div>
       </div>
     </div>

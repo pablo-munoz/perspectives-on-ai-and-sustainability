@@ -107,6 +107,39 @@ export function useWeather() {
   return { weather: data, error, isLoading, refresh };
 }
 
+export interface PoiPoint {
+  id: string;
+  name: string;
+  type: "fire_station" | "hospital" | "water" | "shelter";
+  lat: number;
+  lng: number;
+}
+
+export interface IsochroneFeature {
+  type: "Feature";
+  properties: { value: number };
+  geometry: { type: "Polygon"; coordinates: number[][][] };
+}
+
+export interface PoiResponse {
+  pois: PoiPoint[];
+  isochrones: IsochroneFeature[] | null;
+  isochroneSource: string | null;
+  fetchedAt: string;
+}
+
+export function usePois(lat: number | null, lng: number | null) {
+  const url =
+    lat != null && lng != null
+      ? `/api/pois?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&radius=10000`
+      : null;
+  const { data, error, isLoading } = useSWR<PoiResponse>(url, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 30 * 60 * 1000,
+  });
+  return { pois: data, error, isLoading };
+}
+
 export function useFwi() {
   const { data, error, isLoading, mutate: refresh } = useSWR<FwiResponse>(
     "/api/fwi",

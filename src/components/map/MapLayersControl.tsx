@@ -23,8 +23,8 @@ const TOGGLES: {
 }[] = [
   {
     key: "gibs",
-    label: "VIIRS thermal",
-    hint: "NASA GIBS · today",
+    label: "Satellite imagery",
+    hint: "NASA GIBS · MODIS",
   },
   {
     key: "effis",
