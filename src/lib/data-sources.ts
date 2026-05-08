@@ -108,16 +108,27 @@ export async function fetchWeather(): Promise<LiveWeather> {
     };
   }
 
+  // Strict timeout — AEMET intermittently times out at the TLS layer; a stale
+  // KV cache served by the wrapper is far better UX than a 6 s hang.
+  const aemetFetch = (input: string, init: RequestInit = {}) =>
+    fetch(input, { ...init, signal: AbortSignal.timeout(4000) });
+
+  const safeJson = async (res: Response) => {
+    const ct = res.headers.get("content-type") ?? "";
+    if (!ct.includes("json")) throw new Error(`non-JSON ${res.status}`);
+    return res.json();
+  };
+
   try {
-    const metaRes = await fetch(
+    const metaRes = await aemetFetch(
       `https://opendata.aemet.es/opendata/api/observacion/convencional/datos/estacion/${STATION_ID}`,
       { headers: { api_key: key }, cache: "no-store" }
     );
-    const meta = await metaRes.json();
+    const meta = await safeJson(metaRes);
 
     if (meta?.estado === 200 && meta?.datos) {
-      const dataRes = await fetch(meta.datos, { cache: "no-store" });
-      const obs = await dataRes.json();
+      const dataRes = await aemetFetch(meta.datos, { cache: "no-store" });
+      const obs = await safeJson(dataRes);
       if (Array.isArray(obs) && obs.length > 0) {
         const latest = obs[obs.length - 1];
         return {
@@ -135,14 +146,14 @@ export async function fetchWeather(): Promise<LiveWeather> {
     }
 
     // Forecast fallback
-    const fMeta = await fetch(
+    const fMeta = await aemetFetch(
       `https://opendata.aemet.es/opendata/api/prediccion/especifica/municipio/diaria/32054`,
       { headers: { api_key: key }, cache: "no-store" }
     );
-    const fJson = await fMeta.json();
+    const fJson = await safeJson(fMeta);
     if (fJson?.estado === 200 && fJson?.datos) {
-      const dataRes = await fetch(fJson.datos, { cache: "no-store" });
-      const forecast = await dataRes.json();
+      const dataRes = await aemetFetch(fJson.datos, { cache: "no-store" });
+      const forecast = await safeJson(dataRes);
       const today = forecast?.[0]?.prediccion?.dia?.[0];
       if (today) {
         return {

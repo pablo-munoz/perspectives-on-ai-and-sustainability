@@ -1,11 +1,27 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Allow loading Leaflet tile images from OpenStreetMap
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.tile.openstreetmap.org" },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/embed/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors *",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "ALLOWALL",
+          },
+        ],
+      },
+    ];
   },
 };
 
