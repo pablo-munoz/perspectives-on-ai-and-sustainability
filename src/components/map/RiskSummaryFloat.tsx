@@ -1,8 +1,9 @@
 "use client";
 
 import { Card } from "@/components/ui/Card";
-import { useRisk, useWeather } from "@/lib/hooks";
+import { useRisk, useWeather, useFwi } from "@/lib/hooks";
 import { nelsonFMC } from "@/lib/fmc";
+import { FWI_CLASS_LABEL, type FwiClass } from "@/lib/fwi";
 import { useMemo } from "react";
 
 interface BarRowProps {
@@ -46,9 +47,19 @@ function BarRow({ label, value, pct, tone, hint }: BarRowProps) {
   );
 }
 
+const FWI_TONE: Record<FwiClass, "low" | "high"> = {
+  "very-low": "low",
+  low: "low",
+  moderate: "low",
+  high: "high",
+  "very-high": "high",
+  extreme: "high",
+};
+
 export default function RiskSummaryFloat() {
   const { risk } = useRisk();
   const { weather } = useWeather();
+  const { fwi: fwiData } = useFwi();
 
   const peakLevel = useMemo(() => {
     const zones = risk?.zones ?? [];
@@ -112,6 +123,23 @@ export default function RiskSummaryFloat() {
           value={fmc != null ? `${fmc.toFixed(0)}%` : "—"}
           pct={fmc != null ? Math.min(100, fmc * 4) : 0}
           tone={fmc != null && fmc < 12 ? "high" : "low"}
+        />
+        <BarRow
+          label="FWI (EFFIS index)"
+          value={fwiData ? fwiData.current.fwi.toFixed(1) : "—"}
+          pct={
+            fwiData ? Math.min(100, (fwiData.current.fwi / 50) * 100) : 0
+          }
+          tone={
+            fwiData
+              ? FWI_TONE[fwiData.current.fwiClass as FwiClass] ?? "low"
+              : "low"
+          }
+          hint={
+            fwiData
+              ? FWI_CLASS_LABEL[fwiData.current.fwiClass as FwiClass]
+              : undefined
+          }
         />
       </div>
     </Card>

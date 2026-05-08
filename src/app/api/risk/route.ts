@@ -6,6 +6,7 @@ import {
   computeDynamicRiskLive,
   getModelInfo,
 } from "@/lib/risk-engine";
+import { haversineKm } from "@/lib/geo";
 
 const ZONE_CENTERS: Record<string, [number, number]> = {
   z1: [42.3, -7.935],
@@ -18,16 +19,15 @@ const ZONE_CENTERS: Record<string, [number, number]> = {
   z8: [41.955, -7.435],
 };
 
-const PROXIMITY_DEG = 0.05; // ~5 km
+const PROXIMITY_KM = 5.5;
 
 function detectHotspotZones(hotspots: Array<{ lat: number; lng: number }>): string[] {
   const affected = new Set<string>();
   for (const spot of hotspots) {
     for (const [zoneId, [lat, lng]] of Object.entries(ZONE_CENTERS)) {
-      const dist = Math.sqrt(
-        Math.pow(spot.lat - lat, 2) + Math.pow(spot.lng - lng, 2)
-      );
-      if (dist < PROXIMITY_DEG) affected.add(zoneId);
+      if (haversineKm(spot.lat, spot.lng, lat, lng) < PROXIMITY_KM) {
+        affected.add(zoneId);
+      }
     }
   }
   return Array.from(affected);

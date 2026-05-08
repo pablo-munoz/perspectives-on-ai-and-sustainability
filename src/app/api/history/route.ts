@@ -49,12 +49,22 @@ export async function GET(req: NextRequest) {
     (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()
   );
 
+  const detail = req.nextUrl.searchParams.get("detail") === "full";
+
   // If a specific zone is requested, project the per-zone score.
+  // If detail=full, include the entire zone array per snapshot (for time-machine).
   const series = zoneId
     ? samples.map((s) => ({
         ts: s.ts,
         score: s.zones.find((z) => z.id === zoneId)?.score ?? null,
         base: s.zones.find((z) => z.id === zoneId)?.base ?? null,
+      }))
+    : detail
+    ? samples.map((s) => ({
+        ts: s.ts,
+        avg: s.avg,
+        peak: s.peak.score,
+        zones: s.zones,
       }))
     : samples.map((s) => ({
         ts: s.ts,
@@ -65,6 +75,25 @@ export async function GET(req: NextRequest) {
         medium: s.levelCounts.medium,
         low: s.levelCounts.low,
       }));
+
+  if (req.nextUrl.searchParams.get("format") === "csv") {
+    const headers = zoneId
+      ? ["timestamp", "score", "base"]
+      : ["timestamp", "avg", "peak", "critical", "high", "medium", "low"];
+    const rows = series.map((s) =>
+      headers.map((h) => (s as Record<string, unknown>)[h] ?? "").join(",")
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    const filename = zoneId
+      ? `firesee-${zoneId}-${range}.csv`
+      : `firesee-aggregate-${range}.csv`;
+    return new Response(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    });
+  }
 
   return NextResponse.json({
     range,
