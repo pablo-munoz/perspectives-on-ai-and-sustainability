@@ -45,11 +45,16 @@ export interface DailyRisk {
   [zoneId: string]: number | string;
 }
 
+/**
+ * Colorblind-safe sequential palette (ColorBrewer YlOrRd 4-class).
+ * Aligned with EFFIS visualization conventions for fire danger.
+ * Pair with text/icon labels — never rely on color alone (WCAG 1.4.1).
+ */
 export const RISK_COLORS: Record<RiskLevel, string> = {
-  low: "#22c55e",
-  medium: "#eab308",
-  high: "#f97316",
-  critical: "#ef4444",
+  low: "#fed976",
+  medium: "#feb24c",
+  high: "#fd8d3c",
+  critical: "#bd0026",
 };
 
 export const RISK_LABELS: Record<RiskLevel, string> = {

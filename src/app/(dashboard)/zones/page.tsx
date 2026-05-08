@@ -1,14 +1,12 @@
 "use client";
 
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { Button } from "@/components/ui/Button";
 import { ToolbarChip } from "@/components/ui/Toolbar";
-import { AddZoneCard, ZoneCard } from "@/components/zones/ZoneCard";
+import { ZoneCard } from "@/components/zones/ZoneCard";
 import { useAlerts, useFirms, useRisk, useWeather } from "@/lib/hooks";
 import { riskZones } from "@/lib/mock-data";
-import { Plus, Filter, ArrowDownUp } from "lucide-react";
+import { ArrowDownUp } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 
 const ZONE_BBOX_DEG = 0.06; // ~6 km half-side around zone center for hotspot count
 
@@ -52,28 +50,10 @@ export default function ZonesPage() {
       <SectionHeading
         title="Zones Management"
         subtitle="Real-time geospatial intelligence and risk perimeter monitoring"
-        right={
-          <Button
-            variant="primary"
-            onClick={() =>
-              toast.message("New zones not enabled in demo")
-            }
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add New Zone
-          </Button>
-        }
       />
 
       <div className="mt-7 flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
-          <ToolbarChip
-            active
-            icon={<Filter className="w-3 h-3" />}
-            onClick={() => undefined}
-          >
-            All Sectors
-          </ToolbarChip>
           <ToolbarChip
             active={sortByRisk}
             icon={<ArrowDownUp className="w-3 h-3" />}
@@ -108,7 +88,6 @@ export default function ZonesPage() {
             hotspotsInZone={hotspotsInZone}
           />
         ))}
-        <AddZoneCard />
       </div>
     </div>
   );

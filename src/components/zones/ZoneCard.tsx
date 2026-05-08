@@ -168,27 +168,3 @@ function Stat({
   );
 }
 
-export function AddZoneCard() {
-  return (
-    <button
-      onClick={() =>
-        // sonner side-effect not allowed in server component default; lazy import
-        import("sonner").then((s) =>
-          s.toast.message("New zones not enabled in demo")
-        )
-      }
-      className="rounded-[14px] border border-dashed border-[var(--color-border-strong)] bg-transparent hover:bg-white/[0.02] transition-colors p-6 flex flex-col items-center justify-center text-center min-h-[300px]"
-    >
-      <div className="h-10 w-10 rounded-full border border-[var(--color-border-strong)] flex items-center justify-center text-[var(--color-fg-muted)] text-2xl font-light">
-        +
-      </div>
-      <div className="mt-3 font-display text-base font-semibold text-[var(--color-fg)]">
-        Add New Zone
-      </div>
-      <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-subtle)] leading-relaxed">
-        Define perimeter
-        <br />& deploy sensors
-      </div>
-    </button>
-  );
-}
