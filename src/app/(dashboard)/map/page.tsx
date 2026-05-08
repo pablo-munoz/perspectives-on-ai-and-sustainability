@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import RiskSummaryFloat from "@/components/map/RiskSummaryFloat";
 import WeatherContextFloat from "@/components/map/WeatherContextFloat";
 import CriticalAlertFloat from "@/components/map/CriticalAlertFloat";
+import HotspotContextFloat from "@/components/map/HotspotContextFloat";
 import CoordinatesPill from "@/components/map/CoordinatesPill";
 import MapLayersControl, {
   type MapOverlayState,
@@ -14,6 +15,7 @@ import TimeMachineSlider, {
 } from "@/components/map/TimeMachineSlider";
 import RiskTrendChart from "@/components/charts/RiskTrendChart";
 import ZoneThreatDistribution from "@/components/charts/ZoneThreatDistribution";
+import { usePois } from "@/lib/hooks";
 import type { RiskZone } from "@/lib/mock-data";
 
 const MapboxMap = dynamic(() => import("@/components/map/MapboxMap"), {
@@ -34,6 +36,19 @@ export default function MapPage() {
     scores: ZoneScoreMap | null;
     ts: string | null;
   }>({ scores: null, ts: null });
+  const [hotspot, setHotspot] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
+
+  const { pois } = usePois(hotspot?.lat ?? null, hotspot?.lng ?? null);
+
+  const isochroneFC = useMemo<GeoJSON.FeatureCollection | null>(() => {
+    if (!pois?.isochrones || pois.isochrones.length === 0) return null;
+    return {
+      type: "FeatureCollection",
+      features: pois.isochrones as unknown as GeoJSON.Feature[],
+    };
+  }, [pois]);
 
   const toggle = (key: keyof MapOverlayState) =>
     setOverlays((s) => ({ ...s, [key]: !s[key] }));
@@ -43,6 +58,8 @@ export default function MapPage() {
       <MapboxMap
         selectedZoneId={selectedZoneId}
         onZoneSelect={(z: RiskZone) => setSelectedZoneId(z.id)}
+        onHotspotSelect={(h) => setHotspot(h)}
+        isochrones={isochroneFC}
         overlays={overlays}
         historicalZoneScores={
           tmActive && historical.scores ? historical.scores : undefined
@@ -57,9 +74,19 @@ export default function MapPage() {
         <div className="pointer-events-auto">
           <WeatherContextFloat />
         </div>
-        <div className="pointer-events-auto">
-          <CriticalAlertFloat />
-        </div>
+        {hotspot ? (
+          <div className="pointer-events-auto">
+            <HotspotContextFloat
+              lat={hotspot.lat}
+              lng={hotspot.lng}
+              onClose={() => setHotspot(null)}
+            />
+          </div>
+        ) : (
+          <div className="pointer-events-auto">
+            <CriticalAlertFloat />
+          </div>
+        )}
       </div>
 
       {/* Top-right: coordinates + layer toggles */}

@@ -13,6 +13,7 @@ import {
   Flame,
 } from "lucide-react";
 import { useAlerts } from "@/lib/hooks";
+import { useMobileNav } from "./MobileNavContext";
 
 interface NavItem {
   href: string;
@@ -35,12 +36,19 @@ const FOOTER: NavItem[] = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { alerts } = useAlerts();
+  const { open } = useMobileNav();
   const criticalCount = alerts?.alerts?.filter(
     (a) => a.severity === "critical"
   ).length ?? 0;
 
   return (
-    <aside className="w-[224px] shrink-0 h-full bg-[var(--color-bg-elevated)] border-r border-[var(--color-border)] flex flex-col">
+    <aside
+      className={cn(
+        "w-[224px] shrink-0 h-full bg-[var(--color-bg-elevated)] border-r border-[var(--color-border)] flex flex-col",
+        "fixed md:relative inset-y-0 left-0 z-40 transition-transform",
+        open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      )}
+    >
       {/* Brand */}
       <div className="px-5 pt-5 pb-6">
         <Link href="/map" className="flex items-center gap-2.5">

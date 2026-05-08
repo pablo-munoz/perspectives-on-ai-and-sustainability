@@ -5,11 +5,24 @@ import { useWeather } from "@/lib/hooks";
 import { Wind, ArrowUpRight } from "lucide-react";
 
 export default function WeatherContextFloat() {
-  const { weather } = useWeather();
+  const { weather, isLoading, error } = useWeather();
+  const stale = weather?.source === "Unavailable";
 
   return (
     <Card variant="glass" className="w-[300px] p-4">
-      <div className="section-label">Weather Context</div>
+      <div className="flex items-center justify-between">
+        <div className="section-label">Weather Context</div>
+        {(error || stale) && (
+          <span className="text-[9px] uppercase tracking-[0.14em] text-[var(--color-warning)]">
+            AEMET stale
+          </span>
+        )}
+        {isLoading && !weather && (
+          <span className="text-[9px] uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
+            loading…
+          </span>
+        )}
+      </div>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
         <div>
