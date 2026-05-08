@@ -29,15 +29,14 @@ export default function ZoneThreatDistribution() {
     };
   });
 
-  const totalSensors = zones.length * 24 || 192;
-  const active = Math.floor(totalSensors * 0.92);
+  const peak = data.reduce((m, d) => (d.score > m.score ? d : m), data[0]);
 
   return (
     <Card variant="glass" className="p-4 h-full">
       <div className="flex items-center justify-between">
         <div className="section-label text-[10px]">Zone Threat Distribution</div>
         <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
-          {active.toLocaleString()} active
+          {data.length} zones
         </div>
       </div>
       <div className="h-[100px] mt-3 -mx-2">
@@ -71,8 +70,10 @@ export default function ZoneThreatDistribution() {
         </ResponsiveContainer>
       </div>
       <div className="mt-2 flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
-        <span>Total sensors</span>
-        <span className="text-[var(--color-fg-muted)] tabular">{totalSensors}</span>
+        <span>Peak zone</span>
+        <span className="text-[var(--color-fg-muted)] tabular">
+          {peak?.name ?? "—"} · {peak ? peak.score.toFixed(0) + "%" : "—"}
+        </span>
       </div>
     </Card>
   );

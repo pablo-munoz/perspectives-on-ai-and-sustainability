@@ -2,7 +2,6 @@
 
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { StatusPill } from "@/components/ui/StatusPill";
-import { Button } from "@/components/ui/Button";
 import { MetricCard } from "@/components/ui/MetricCard";
 import RiskIndexBars from "@/components/charts/RiskIndexBars";
 import HistoricalVsPredicted from "@/components/charts/HistoricalVsPredicted";
@@ -10,8 +9,7 @@ import ProjectionWarning from "@/components/analytics/ProjectionWarning";
 import SectorMappingContext from "@/components/analytics/SectorMappingContext";
 import { useRisk, useWeather, useFirms, timeAgo } from "@/lib/hooks";
 import { nelsonFMC } from "@/lib/fmc";
-import { Leaf, Thermometer, Droplet, FileText } from "lucide-react";
-import { toast } from "sonner";
+import { Leaf, Thermometer, Droplet, Download } from "lucide-react";
 import { useMemo } from "react";
 
 export default function AnalyticsPage() {
@@ -44,17 +42,14 @@ export default function AnalyticsPage() {
             <StatusPill tone="synced" pulse>
               Data synced: {timeAgo(firms?.fetchedAt)}
             </StatusPill>
-            <Button
-              variant="primary"
-              onClick={() =>
-                toast.success("Report generated", {
-                  description: "PDF export queued — check downloads.",
-                })
-              }
+            <a
+              href="/api/history?range=90d&format=csv"
+              download
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-[var(--color-accent)] text-black text-[12px] font-bold uppercase tracking-[0.14em] hover:bg-[var(--color-accent-hi)] transition-colors"
             >
-              <FileText className="w-3.5 h-3.5" />
-              Generate Report
-            </Button>
+              <Download className="w-3.5 h-3.5" />
+              Export CSV
+            </a>
           </>
         }
       />

@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR, { mutate } from "swr";
+import type { FwiResponse } from "@/lib/fwi";
 
 export interface LiveWeather {
   temperature: number | null;
@@ -104,6 +105,19 @@ export function useWeather() {
     }
   );
   return { weather: data, error, isLoading, refresh };
+}
+
+export function useFwi() {
+  const { data, error, isLoading, mutate: refresh } = useSWR<FwiResponse>(
+    "/api/fwi",
+    fetcher,
+    {
+      refreshInterval: 30 * 60 * 1000,
+      revalidateOnFocus: false,
+      dedupingInterval: 5 * 60 * 1000,
+    }
+  );
+  return { fwi: data, error, isLoading, refresh };
 }
 
 export function useFirms() {
