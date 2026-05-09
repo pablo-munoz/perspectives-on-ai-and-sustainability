@@ -55,6 +55,18 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
     title: "Air Quality",
     subtitle: "PM2.5 · PM10 · European AQI · Copernicus CAMS",
   },
+  "/press": {
+    title: "Press Kit",
+    subtitle: "Embeds, OG cards, RSS, iCal, downloads — CC-BY-4.0",
+  },
+  "/burn-severity": {
+    title: "Burn Severity",
+    subtitle: "Sentinel-2 NBR / dNBR methodology",
+  },
+  "/changelog": {
+    title: "Changelog",
+    subtitle: "What shipped and when",
+  },
 };
 
 function useCurrentTitle() {
