@@ -18,6 +18,9 @@ import {
   Siren,
   Droplets,
   Wind,
+  Newspaper,
+  GitBranch,
+  FileText,
 } from "lucide-react";
 import { useAlerts } from "@/lib/hooks";
 import { useMobileNav } from "./MobileNavContext";
@@ -43,6 +46,10 @@ const SECONDARY: NavItem[] = [
   { href: "/glossary", label: "Glossary", icon: BookOpen },
   { href: "/data", label: "Open Data", icon: Database },
   { href: "/status", label: "Status", icon: Activity },
+  { href: "/press", label: "Press kit", icon: Newspaper },
+  { href: "/burn-severity", label: "Burn severity", icon: Flame },
+  { href: "/briefing", label: "Briefing (PDF)", icon: FileText },
+  { href: "/changelog", label: "Changelog", icon: GitBranch },
 ];
 
 const FOOTER: NavItem[] = [
