@@ -13,6 +13,7 @@ import MapLayersControl, {
 import TimeMachineSlider, {
   type ZoneScoreMap,
 } from "@/components/map/TimeMachineSlider";
+import WhatIfSlider from "@/components/map/WhatIfSlider";
 import RiskTrendChart from "@/components/charts/RiskTrendChart";
 import ZoneThreatDistribution from "@/components/charts/ZoneThreatDistribution";
 import { usePois } from "@/lib/hooks";
@@ -100,6 +101,7 @@ export default function MapPage() {
             onToggleTimeMachine={() => setTmActive((v) => !v)}
           />
         </div>
+        <WhatIfSlider />
       </div>
 
       {/* Time machine slider — appears above the bottom charts when active */}
