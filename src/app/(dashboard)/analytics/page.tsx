@@ -7,6 +7,7 @@ import RiskIndexBars from "@/components/charts/RiskIndexBars";
 import HistoricalVsPredicted from "@/components/charts/HistoricalVsPredicted";
 import ForecastRibbon from "@/components/charts/ForecastRibbon";
 import RiskHeatmapCalendar from "@/components/charts/RiskHeatmapCalendar";
+import YearOverYear from "@/components/charts/YearOverYear";
 import ProjectionWarning from "@/components/analytics/ProjectionWarning";
 import SectorMappingContext from "@/components/analytics/SectorMappingContext";
 import { useRisk, useWeather, useFirms, timeAgo } from "@/lib/hooks";
@@ -67,6 +68,7 @@ export default function AnalyticsPage() {
         <div className="col-span-12 lg:col-span-4 grid gap-4 content-stretch">
           <MetricCard
             label="NDVI Vegetation Index"
+            termId="ndvi"
             value={ndvi != null ? ndvi.toFixed(2) : "—"}
             delta={
               ndvi != null
@@ -80,7 +82,8 @@ export default function AnalyticsPage() {
             iconTone="success"
           />
           <MetricCard
-            label="Surface Temp (avg)"
+            label="Surface Temp (LST)"
+            termId="lst"
             value={lst != null ? lst.toFixed(1) : "—"}
             unit="°C"
             delta={
@@ -95,7 +98,8 @@ export default function AnalyticsPage() {
             iconTone="critical"
           />
           <MetricCard
-            label="Fuel Moisture Content"
+            label="Fuel Moisture (FMC)"
+            termId="fmc"
             value={fmc != null ? fmc.toFixed(1) : "—"}
             unit="%"
             delta={
@@ -121,6 +125,10 @@ export default function AnalyticsPage() {
 
         <div className="col-span-12">
           <RiskHeatmapCalendar />
+        </div>
+
+        <div className="col-span-12">
+          <YearOverYear />
         </div>
       </div>
     </div>

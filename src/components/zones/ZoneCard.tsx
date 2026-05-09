@@ -3,8 +3,9 @@
 import { Card } from "@/components/ui/Card";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import type { RiskZone, RiskLevel } from "@/lib/mock-data";
-import { Flame, Thermometer, Droplet, Wind, MoreVertical } from "lucide-react";
+import { Flame, Thermometer, Droplet, Wind, ArrowUpRight } from "lucide-react";
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 interface ZoneCardProps {
   zone: RiskZone;
@@ -46,10 +47,14 @@ export function ZoneCard({
   const level = liveLevel ?? zone.riskLevel;
 
   return (
-    <Card
-      variant="elevated"
-      className="overflow-hidden hover:border-[var(--color-border-strong)] transition-colors group"
+    <Link
+      href={`/zones/${zone.id}`}
+      className="block focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded-[14px]"
     >
+      <Card
+        variant="elevated"
+        className="overflow-hidden hover:border-[var(--color-border-strong)] transition-colors group"
+      >
       {/* Visual hero */}
       <div
         className={`relative h-36 bg-gradient-to-br ${gradients[level]} overflow-hidden`}
@@ -97,12 +102,12 @@ export function ZoneCard({
               Coords {zone.center[0].toFixed(3)}°N, {Math.abs(zone.center[1]).toFixed(3)}°W
             </div>
           </div>
-          <button
-            className="text-[var(--color-fg-subtle)] hover:text-[var(--color-fg)] -mr-1"
-            aria-label="More"
+          <span
+            className="text-[var(--color-fg-subtle)] group-hover:text-[var(--color-accent)] -mr-1 transition-colors"
+            aria-label="Open detail"
           >
-            <MoreVertical className="w-4 h-4" />
-          </button>
+            <ArrowUpRight className="w-4 h-4" />
+          </span>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2.5">
@@ -140,7 +145,8 @@ export function ZoneCard({
           />
         </div>
       </div>
-    </Card>
+      </Card>
+    </Link>
   );
 }
 
