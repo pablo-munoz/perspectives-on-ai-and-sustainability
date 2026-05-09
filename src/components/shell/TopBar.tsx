@@ -26,6 +26,22 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   },
   "/settings": { title: "Settings", subtitle: "Workspace preferences" },
   "/support": { title: "Support", subtitle: "Help & documentation" },
+  "/methodology": {
+    title: "Methodology",
+    subtitle: "Data sources, model card and limitations",
+  },
+  "/glossary": {
+    title: "Glossary",
+    subtitle: "Definitions for every technical term",
+  },
+  "/data": {
+    title: "Open Data",
+    subtitle: "Public datasets and API endpoints",
+  },
+  "/status": {
+    title: "Data Source Status",
+    subtitle: "Live health of every external feed",
+  },
 };
 
 function useCurrentTitle() {

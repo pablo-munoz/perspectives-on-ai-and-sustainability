@@ -1,9 +1,12 @@
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 import { Card } from "./Card";
+import MetricInfo from "./MetricInfo";
 
 interface MetricCardProps {
   label: string;
+  /** Glossary term id — when provided, an info popover appears next to the label. */
+  termId?: string;
   value: ReactNode;
   unit?: string;
   delta?: { value: string; tone?: "up" | "down" | "neutral" };
@@ -23,6 +26,7 @@ const iconBg: Record<NonNullable<MetricCardProps["iconTone"]>, string> = {
 
 export function MetricCard({
   label,
+  termId,
   value,
   unit,
   delta,
@@ -41,7 +45,10 @@ export function MetricCard({
     <Card variant="elevated" className={cn("p-5", className)}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="section-label">{label}</div>
+          <div className="section-label inline-flex items-center gap-1">
+            {label}
+            {termId && <MetricInfo termId={termId} />}
+          </div>
           <div className="mt-3 flex items-baseline gap-1.5">
             <span className="font-display text-3xl md:text-4xl font-semibold tracking-tight tabular">
               {value}

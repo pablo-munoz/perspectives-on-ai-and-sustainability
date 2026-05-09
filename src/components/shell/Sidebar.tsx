@@ -11,6 +11,10 @@ import {
   Settings,
   LifeBuoy,
   Flame,
+  BookOpen,
+  Activity,
+  Database,
+  ScrollText,
 } from "lucide-react";
 import { useAlerts } from "@/lib/hooks";
 import { useMobileNav } from "./MobileNavContext";
@@ -26,6 +30,13 @@ const NAV: NavItem[] = [
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/zones", label: "Zones", icon: Layers },
   { href: "/alerts", label: "Alerts", icon: BellRing },
+];
+
+const SECONDARY: NavItem[] = [
+  { href: "/methodology", label: "Methodology", icon: ScrollText },
+  { href: "/glossary", label: "Glossary", icon: BookOpen },
+  { href: "/data", label: "Open Data", icon: Database },
+  { href: "/status", label: "Status", icon: Activity },
 ];
 
 const FOOTER: NavItem[] = [
@@ -110,6 +121,34 @@ export default function Sidebar() {
             );
           })}
         </ul>
+
+        <div className="mt-5 pt-4 border-t border-[var(--color-border)]">
+          <div className="px-3 mb-2 text-[9px] uppercase tracking-[0.16em] text-[var(--color-fg-subtle)]">
+            Reference
+          </div>
+          <ul className="space-y-1">
+            {SECONDARY.map((item) => {
+              const active = pathname?.startsWith(item.href) ?? false;
+              const Icon = item.icon;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 h-9 rounded-md text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors",
+                      active
+                        ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
+                        : "text-[var(--color-fg-muted)] hover:text-[var(--color-fg)] hover:bg-white/[0.03]"
+                    )}
+                  >
+                    <Icon className="w-3.5 h-3.5" strokeWidth={2} />
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </nav>
 
       {/* Live alerts CTA */}
