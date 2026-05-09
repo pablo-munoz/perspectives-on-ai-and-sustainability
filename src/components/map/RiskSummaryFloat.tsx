@@ -4,22 +4,25 @@ import { Card } from "@/components/ui/Card";
 import { useRisk, useWeather, useFwi } from "@/lib/hooks";
 import { nelsonFMC } from "@/lib/fmc";
 import { FWI_CLASS_LABEL, type FwiClass } from "@/lib/fwi";
+import MetricInfo from "@/components/ui/MetricInfo";
 import { useMemo } from "react";
 
 interface BarRowProps {
   label: string;
+  termId?: string;
   value: string;
   pct: number;
   tone: "low" | "high";
   hint?: string;
 }
 
-function BarRow({ label, value, pct, tone, hint }: BarRowProps) {
+function BarRow({ label, termId, value, pct, tone, hint }: BarRowProps) {
   return (
     <div>
       <div className="flex items-center justify-between text-[11px] tracking-wide">
-        <span className="text-[var(--color-fg-muted)] font-medium">
+        <span className="text-[var(--color-fg-muted)] font-medium inline-flex items-center gap-1">
           {label}
+          {termId && <MetricInfo termId={termId} />}
         </span>
         <span
           className={
@@ -106,26 +109,30 @@ export default function RiskSummaryFloat() {
 
       <div className="mt-4 space-y-4">
         <BarRow
-          label="NDVI (Vegetation Index)"
+          label="NDVI"
+          termId="ndvi"
           value={ndviAvg != null ? ndviAvg.toFixed(2) : "—"}
           pct={ndviAvg != null ? ndviAvg * 100 * 1.4 : 0}
           tone={ndviAvg != null && ndviAvg < 0.3 ? "high" : "low"}
           hint={ndviAvg != null && ndviAvg < 0.3 ? "Dry" : "Active"}
         />
         <BarRow
-          label="LST (Surface Temp)"
+          label="LST"
+          termId="lst"
           value={lst != null ? `${lst.toFixed(0)}°C` : "—"}
           pct={lst != null ? Math.min(100, (lst / 45) * 100) : 0}
           tone={lst != null && lst > 30 ? "high" : "low"}
         />
         <BarRow
-          label="FMC (Fuel Moisture)"
+          label="FMC"
+          termId="fmc"
           value={fmc != null ? `${fmc.toFixed(0)}%` : "—"}
           pct={fmc != null ? Math.min(100, fmc * 4) : 0}
           tone={fmc != null && fmc < 12 ? "high" : "low"}
         />
         <BarRow
-          label="FWI (EFFIS index)"
+          label="FWI"
+          termId="fwi"
           value={fwiData ? fwiData.current.fwi.toFixed(1) : "—"}
           pct={
             fwiData ? Math.min(100, (fwiData.current.fwi / 50) * 100) : 0

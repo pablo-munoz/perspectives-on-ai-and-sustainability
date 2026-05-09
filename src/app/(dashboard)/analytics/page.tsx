@@ -67,6 +67,7 @@ export default function AnalyticsPage() {
         <div className="col-span-12 lg:col-span-4 grid gap-4 content-stretch">
           <MetricCard
             label="NDVI Vegetation Index"
+            termId="ndvi"
             value={ndvi != null ? ndvi.toFixed(2) : "—"}
             delta={
               ndvi != null
@@ -80,7 +81,8 @@ export default function AnalyticsPage() {
             iconTone="success"
           />
           <MetricCard
-            label="Surface Temp (avg)"
+            label="Surface Temp (LST)"
+            termId="lst"
             value={lst != null ? lst.toFixed(1) : "—"}
             unit="°C"
             delta={
@@ -95,7 +97,8 @@ export default function AnalyticsPage() {
             iconTone="critical"
           />
           <MetricCard
-            label="Fuel Moisture Content"
+            label="Fuel Moisture (FMC)"
+            termId="fmc"
             value={fmc != null ? fmc.toFixed(1) : "—"}
             unit="%"
             delta={
