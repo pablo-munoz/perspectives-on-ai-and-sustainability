@@ -77,14 +77,13 @@ const SOURCES = [
 ];
 
 const FEATURES = [
-  { name: "NDVI", weight: "12.3 %" },
-  { name: "NDMI", weight: "12.7 %" },
-  { name: "LST", weight: "20.7 %" },
-  { name: "elevation", weight: "16.3 %" },
-  { name: "slope", weight: "10.9 %" },
-  { name: "aspect", weight: "10.3 %" },
-  { name: "dist_urban", weight: "16.9 %" },
-  { name: "dist_roads", weight: "0.0 %" },
+  { name: "elevation", weight: "19.8 %" },
+  { name: "LST", weight: "18.1 %" },
+  { name: "dist_urban", weight: "16.4 %" },
+  { name: "slope", weight: "12.4 %" },
+  { name: "NDMI", weight: "11.9 %" },
+  { name: "NDVI", weight: "11.9 %" },
+  { name: "aspect", weight: "9.5 %" },
 ];
 
 export default function MethodologyPage() {
@@ -173,11 +172,17 @@ export default function MethodologyPage() {
       <section id="model" className="mb-8 scroll-mt-6">
         <h2 className="font-display text-xl font-semibold">ML model</h2>
         <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
-          A Random Forest classifier (200 trees, max depth 12) trained on
-          static Sentinel-2 features and MCD64A1 burned-area labels for
-          2015–2023. Inference runs as a JS forward-pass over the exported
-          tree dump per request, modulated by live weather modifiers and
-          per-zone NDVI/NDMI overrides from the weekly GEE refresh.
+          V3 (May 2026): a Random Forest classifier with 200 trees,
+          min-samples-leaf = 2, trained on 2929 samples drawn from MCD64A1
+          burned-area pixels and matched non-burned pixels across 2018–2022
+          fire seasons (May–Sep). Sampling is restricted to ESA WorldCover
+          tree-cover / shrubland / grassland classes so non-burns are
+          potentially burnable. Burned and non-burned classes share the
+          same DOY distribution by paired sampling — without this, the
+          model would trivially separate classes via seasonal weather.
+          Inference runs as a JS forward-pass over the exported tree dump
+          per request, modulated by live weather modifiers and per-zone
+          NDVI/NDMI overrides from the weekly GEE refresh.
         </p>
 
         <Card variant="elevated" className="mt-4 p-4">
@@ -209,16 +214,12 @@ export default function MethodologyPage() {
             })}
           </ul>
           <p className="mt-3 text-[11px] text-[var(--color-fg-subtle)]">
-            <code>dist_roads</code> currently has 0 importance — the gROADS
-            dataset returned a constant for our bbox. A V2 pipeline replaces
-            it with FWI-derived temporal features (see{" "}
-            <a
-              className="text-[var(--color-accent)] hover:underline"
-              href="https://github.com/pablo-munoz/perspectives-on-ai-and-sustainability"
-            >
-              ml/train_v2_with_fwi.py
-            </a>
-            ).
+            V3 (May 2026) drops the broken <code>dist_roads</code> feature
+            and rebuilds the dataset with per-event 30-day pre-burn windows
+            (NDVI/NDMI/LST measured strictly before the fire, with paired DOY
+            sampling between burned and non-burned classes to remove
+            seasonal leakage) and burnable-only land cover from ESA
+            WorldCover. Headline AUC moved from 0.74 → 0.84.
           </p>
         </Card>
       </section>
@@ -260,23 +261,26 @@ export default function MethodologyPage() {
           Performance & validation
         </h2>
         <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
-          Reported on a 30 % held-out test set:
+          Reported on stratified random 5-fold cross-validation across 2929
+          samples (May–Sep 2018-2022, ESA WorldCover burnable land only):
         </p>
         <ul className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Stat label="Accuracy" value="66.7 %" />
-          <Stat label="Kappa" value="0.33" />
-          <Stat label="Precision" value="65.4 %" />
-          <Stat label="Recall" value="70.7 %" />
-          <Stat label="AUC-ROC" value="0.74" />
-          <Stat label="Brier" value="0.21" />
-          <Stat label="Train n" value="700" />
-          <Stat label="Test n" value="300" />
+          <Stat label="AUC-ROC" value="0.84" />
+          <Stat label="Accuracy" value="79.0 %" />
+          <Stat label="Kappa" value="0.48" />
+          <Stat label="Precision" value="73.5 %" />
+          <Stat label="Recall" value="53.7 %" />
+          <Stat label="F1" value="0.62" />
+          <Stat label="Train n" value="2 343" />
+          <Stat label="Test n" value="586" />
         </ul>
         <p className="mt-3 text-[11.5px] text-[var(--color-fg-subtle)]">
-          Random Forest probabilities are well-known to be poorly calibrated.
-          Treat the score as a relative ranking signal, not an absolute
-          probability. The V2 pipeline introduces isotonic calibration and
-          50× bootstrap uncertainty bands.
+          Honest disclosure: leave-one-year-out CV (train on 4 fire seasons,
+          test on the 5th) lands at AUC ≈ 0.66. The 0.84 above is the
+          apples-to-apples successor to V1's 0.74 (same metric); the 0.66 is
+          the harder cross-year transfer score. Random Forest probabilities
+          are also poorly calibrated by default — treat the score as a
+          relative ranking signal, not an absolute probability.
         </p>
       </section>
 
@@ -299,7 +303,7 @@ export default function MethodologyPage() {
             funnelling, fuel breaks, recent burns) are not modelled.
           </li>
           <li>
-            Risk score is calibrated against 2015–2023 fire seasons; climate
+            Risk score is fitted to 2018–2022 fire seasons; climate
             non-stationarity may degrade out-of-distribution performance.
           </li>
           <li>
@@ -318,11 +322,11 @@ export default function MethodologyPage() {
             <span className="text-[var(--color-fg-subtle)]">Schema</span>
             <span>v1</span>
             <span className="text-[var(--color-fg-subtle)]">Model</span>
-            <span>fire_risk_rf v1 · 200 trees</span>
+            <span>fire_risk_rf v3 · 200 trees</span>
             <span className="text-[var(--color-fg-subtle)]">
               Training period
             </span>
-            <span>2015 – 2023</span>
+            <span>2018 – 2022 fire seasons (May–Sep)</span>
             <span className="text-[var(--color-fg-subtle)]">Random seed</span>
             <span>42</span>
             <span className="text-[var(--color-fg-subtle)]">
