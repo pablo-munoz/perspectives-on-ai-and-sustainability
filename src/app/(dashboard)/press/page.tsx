@@ -115,7 +115,7 @@ export default function PressPage() {
             >
               <span className="truncate">{z.name}</span>
               <a
-                href={`/zones/${z.id}/opengraph-image`}
+                href={`/api/og/zone/${z.id}`}
                 target="_blank"
                 rel="noreferrer"
                 className="text-[var(--color-accent)] hover:underline text-[10.5px] uppercase tracking-[0.14em] font-bold"
