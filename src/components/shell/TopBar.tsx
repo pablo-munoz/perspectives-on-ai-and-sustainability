@@ -63,10 +63,6 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
     title: "Burn Severity",
     subtitle: "Sentinel-2 NBR / dNBR methodology",
   },
-  "/changelog": {
-    title: "Changelog",
-    subtitle: "What shipped and when",
-  },
 };
 
 function useCurrentTitle() {

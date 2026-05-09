@@ -19,7 +19,6 @@ import {
   Droplets,
   Wind,
   Newspaper,
-  GitBranch,
   FileText,
 } from "lucide-react";
 import { useAlerts } from "@/lib/hooks";
@@ -49,7 +48,6 @@ const SECONDARY: NavItem[] = [
   { href: "/press", label: "Press kit", icon: Newspaper },
   { href: "/burn-severity", label: "Burn severity", icon: Flame },
   { href: "/briefing", label: "Briefing (PDF)", icon: FileText },
-  { href: "/changelog", label: "Changelog", icon: GitBranch },
 ];
 
 const FOOTER: NavItem[] = [
