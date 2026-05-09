@@ -6,6 +6,7 @@ import { useAlerts, useRisk } from "@/lib/hooks";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { useEffect, useMemo, useState } from "react";
 import { useMobileNav } from "./MobileNavContext";
+import ThemeToggle from "./ThemeToggle";
 
 const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/map": {
@@ -112,6 +113,8 @@ export default function TopBar() {
         {peakZone && peakZone.riskLevel !== "critical" && (
           <StatusPill tone="synced">Data Synced</StatusPill>
         )}
+
+        <ThemeToggle />
 
         <button
           className="relative h-9 w-9 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-fg-muted)] hover:text-[var(--color-fg)] flex items-center justify-center transition-colors"
