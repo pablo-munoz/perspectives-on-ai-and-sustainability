@@ -43,6 +43,18 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
     title: "Data Source Status",
     subtitle: "Live health of every external feed",
   },
+  "/incidents": {
+    title: "Incidents",
+    subtitle: "Live FIRMS detections clustered into incident objects",
+  },
+  "/drought": {
+    title: "Drought Monitor",
+    subtitle: "KBDI · SPI · days-since-rain · Open-Meteo Archive",
+  },
+  "/air": {
+    title: "Air Quality",
+    subtitle: "PM2.5 · PM10 · European AQI · Copernicus CAMS",
+  },
 };
 
 function useCurrentTitle() {

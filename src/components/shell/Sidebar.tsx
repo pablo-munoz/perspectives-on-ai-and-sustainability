@@ -15,6 +15,9 @@ import {
   Activity,
   Database,
   ScrollText,
+  Siren,
+  Droplets,
+  Wind,
 } from "lucide-react";
 import { useAlerts } from "@/lib/hooks";
 import { useMobileNav } from "./MobileNavContext";
@@ -29,6 +32,9 @@ const NAV: NavItem[] = [
   { href: "/map", label: "Map View", icon: MapIcon },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/zones", label: "Zones", icon: Layers },
+  { href: "/incidents", label: "Incidents", icon: Siren },
+  { href: "/drought", label: "Drought", icon: Droplets },
+  { href: "/air", label: "Air Quality", icon: Wind },
   { href: "/alerts", label: "Alerts", icon: BellRing },
 ];
 

@@ -221,6 +221,15 @@ export const FWI_CLASS_LABEL: Record<FwiClass, string> = {
   extreme: "Extreme",
 };
 
+export const TONE_COLOR_BY_CLASS: Record<FwiClass, string> = {
+  "very-low": "#ffffb2",
+  low: "#fed976",
+  moderate: "#feb24c",
+  high: "#fd8d3c",
+  "very-high": "#f03b20",
+  extreme: "#bd0026",
+};
+
 export interface FwiDay {
   date: string;
   ffmc: number;
