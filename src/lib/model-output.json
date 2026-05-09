@@ -1,66 +1,67 @@
 {
-  "model": "RandomForest",
+  "model": "RandomForestV3",
   "n_trees": 200,
-  "accuracy": 0.6667,
-  "kappa": 0.3333,
-  "precision": 0.6543,
-  "recall": 0.7067,
-  "f1": 0.6795,
-  "auc": 0.7436,
+  "version": "3.0.0",
+  "generated_at": "2026-05-09T17:29:56.495390+00:00",
+  "training_period": "2018-2022 fire seasons (May\u2013Sep)",
+  "feature_year": 2022,
+  "accuracy": 0.7904,
+  "kappa": 0.4805,
+  "auc": 0.8414,
+  "precision": 0.735,
+  "recall": 0.5369,
+  "f1": 0.6205,
+  "auc_leave_one_year_out": 0.6631,
+  "feature_importance": {
+    "elevation": 19.7712,
+    "LST": 18.135,
+    "dist_urban": 16.3594,
+    "slope": 12.4269,
+    "NDMI": 11.9455,
+    "NDVI": 11.903,
+    "aspect": 9.4591
+  },
   "confusion_matrix": [
     [
-      94,
-      56
+      1813,
+      181
     ],
     [
-      44,
-      106
+      433,
+      502
     ]
   ],
-  "samples": {
-    "total": 1200,
-    "training": 900,
-    "validation": 300,
-    "positive": 600,
-    "negative": 600
-  },
-  "feature_importance": {
-    "LST": 20.6528,
-    "dist_urban": 16.864,
-    "elevation": 16.2705,
-    "NDMI": 12.7063,
-    "NDVI": 12.3116,
-    "slope": 10.9069,
-    "aspect": 10.288,
-    "dist_roads": 0.0
-  },
   "zone_risk_scores": {
-    "Serra de San Mamede": 0.2445,
-    "Ribeira Sacra": 0.1903,
-    "Baixa Limia": 0.7105,
-    "Macizo Central": 0.1341,
-    "Val do Arnoia": 0.1337,
-    "Serra do Invernadeiro": 0.3376,
-    "Celanova": 0.0999,
-    "Verin": 0.4181
+    "z1": 0.0887,
+    "z2": 0.0253,
+    "z3": 0.2009,
+    "z4": 0.0412,
+    "z5": 0.0713,
+    "z6": 0.0835,
+    "z7": 0.0296,
+    "z8": 0.1625
   },
-  "training_period": "2015-2024",
-  "feature_year": 2024,
-  "feature_order": [
+  "samples": {
+    "total": 2929,
+    "positive": 935,
+    "negative": 1994,
+    "training": 2343,
+    "validation": 585
+  },
+  "rf_params": {
+    "n_estimators": 200,
+    "min_samples_leaf": 2,
+    "random_state": 42
+  },
+  "features": [
     "NDVI",
     "NDMI",
     "LST",
     "slope",
     "aspect",
     "elevation",
-    "dist_roads",
     "dist_urban"
   ],
-  "artifacts": {
-    "sklearn_pkl": "ml/artifacts/fire_risk_rf.pkl",
-    "onnx_available": false,
-    "onnx_path": null
-  },
-  "generated_at": "2026-05-06T11:29:55.364090Z",
-  "note": "Real metrics from sklearn RandomForest on a 300-sample held-out validation set. Zone scores are predictions on the per-zone mean feature vector."
+  "data_source": "MODIS MCD64A1 burned-area + ESA WorldCover burnable mask + Sentinel-2 NDVI/NDMI + MODIS LST + ERA5 (excluded from final model)",
+  "note": "V3 \u2014 per-event 30-day pre-burn windows, paired DOY between classes, burnable land cover only. Volatile per-event weather features were tested but dropped: they boosted within-year AUC to 0.99 by encoding year identity instead of fire risk."
 }
