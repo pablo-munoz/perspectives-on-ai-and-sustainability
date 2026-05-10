@@ -1,5 +1,4 @@
 import { Card } from "@/components/ui/Card";
-import { GLOSSARY } from "@/lib/glossary";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -9,12 +8,12 @@ export const metadata: Metadata = {
 };
 
 const SECTIONS = [
-  { id: "overview", title: "What this dashboard is (and is not)" },
-  { id: "sources", title: "Data sources" },
-  { id: "model", title: "ML model" },
-  { id: "fwi", title: "FWI computation" },
-  { id: "performance", title: "Performance & validation" },
-  { id: "limitations", title: "Known limitations" },
+  { id: "overview", title: "What this dashboard is (and isn't)" },
+  { id: "sources", title: "Where the data comes from" },
+  { id: "model", title: "How the risk score is calculated" },
+  { id: "fwi", title: "The FWI weather index" },
+  { id: "performance", title: "How well does it work?" },
+  { id: "limitations", title: "What it can't see" },
   { id: "version", title: "Version & reproducibility" },
   { id: "citation", title: "Citation" },
 ];
@@ -22,68 +21,176 @@ const SECTIONS = [
 const SOURCES = [
   {
     name: "AEMET Open Data",
-    purpose: "Hourly weather observations · station 1690A (Ourense).",
-    refresh: "5 min",
+    purpose: "Live weather from the Spanish meteorological agency — temperature, humidity, wind, rain. Station 1690A in Ourense.",
+    refresh: "every 5 min",
     license: "CC-BY 4.0",
   },
   {
     name: "NASA FIRMS · VIIRS 375 m",
-    purpose: "Active fire / thermal anomaly detections.",
-    refresh: "10 min",
+    purpose: "Where on Earth a satellite has just spotted heat hot enough to be a fire.",
+    refresh: "every 10 min",
     license: "Public domain",
   },
   {
     name: "Open-Meteo Forecast",
-    purpose: "Daily Tmax / RH min / wind / precipitation for 7-day FWI run.",
-    refresh: "1 h",
+    purpose: "Tomorrow's weather (temperature, humidity, wind, rain) for the next 7 days, used to project the FWI ahead.",
+    refresh: "every hour",
     license: "CC-BY 4.0",
   },
   {
     name: "Copernicus EFFIS",
-    purpose: "European FWI raster (WMS overlay).",
-    refresh: "Daily",
+    purpose: "The European Union's official fire-danger map. We show it as an optional toggleable layer.",
+    refresh: "daily",
     license: "© European Union, Copernicus",
   },
   {
     name: "NASA GIBS",
-    purpose: "MODIS Terra true-color tile layer.",
-    refresh: "Daily",
+    purpose: "Satellite imagery (MODIS true-color) you can switch on as a map background.",
+    refresh: "daily",
     license: "Public domain",
   },
   {
     name: "OpenStreetMap · Overpass",
-    purpose: "Nearby fire stations, hospitals, water points.",
-    refresh: "On demand",
+    purpose: "Where the nearest fire stations, hospitals and water points are when you click a hotspot.",
+    refresh: "on demand",
     license: "ODbL · © OSM contributors",
   },
   {
     name: "OpenRouteService",
-    purpose: "Drive-time isochrones (10 / 15 min).",
-    refresh: "On demand",
+    purpose: "Drive-time circles (10 / 15 minutes from a hotspot) using the road network.",
+    refresh: "on demand",
     license: "© HeiGIT",
   },
   {
     name: "Copernicus Sentinel-2",
-    purpose: "NDVI / NDMI per zone (refreshed weekly).",
-    refresh: "Weekly",
+    purpose: "Vegetation health (NDVI) and moisture (NDMI) per zone, refreshed once a week.",
+    refresh: "weekly",
     license: "Modified Copernicus Sentinel data",
   },
   {
     name: "MITECO · EGIF",
-    purpose: "Historical fire context (Galicia).",
-    refresh: "Annual",
+    purpose: "Spain's official archive of past forest fires — used for context, not real-time.",
+    refresh: "annual",
     license: "© MITECO",
   },
 ];
 
 const FEATURES = [
-  { name: "elevation", weight: "19.8 %" },
-  { name: "LST", weight: "18.1 %" },
-  { name: "dist_urban", weight: "16.4 %" },
-  { name: "slope", weight: "12.4 %" },
-  { name: "NDMI", weight: "11.9 %" },
-  { name: "NDVI", weight: "11.9 %" },
-  { name: "aspect", weight: "9.5 %" },
+  {
+    name: "elevation",
+    weight: "19.8 %",
+    plain: "How high above sea level the patch sits",
+  },
+  {
+    name: "LST",
+    weight: "18.1 %",
+    plain: "How hot the ground surface is",
+  },
+  {
+    name: "dist_urban",
+    weight: "16.4 %",
+    plain: "How far the patch is from the nearest village or town",
+  },
+  {
+    name: "slope",
+    weight: "12.4 %",
+    plain: "How steep the terrain is",
+  },
+  {
+    name: "NDMI",
+    weight: "11.9 %",
+    plain: "How wet the vegetation is (moisture index)",
+  },
+  {
+    name: "NDVI",
+    weight: "11.9 %",
+    plain: "How green and healthy the vegetation looks",
+  },
+  {
+    name: "aspect",
+    weight: "9.5 %",
+    plain: "Which way the slope faces (south-facing dries faster)",
+  },
+];
+
+interface IndexCard {
+  abbr: string;
+  range: string;
+  plain: string;
+}
+
+const FWI_INDICES: IndexCard[] = [
+  {
+    abbr: "FWI",
+    range: "0 → 50+",
+    plain:
+      "The headline number. How easy is it for a fire to spread today, given the recent weather? Below 5 is calm, 21+ is high, 50+ is extreme.",
+  },
+  {
+    abbr: "FFMC",
+    range: "0 → 101",
+    plain:
+      "How dry the small stuff is — leaves, twigs, dry grass. Updates within hours of a weather change. Above 85 = a spark catches very easily.",
+  },
+  {
+    abbr: "DMC",
+    range: "0 → 150+",
+    plain:
+      "Moisture in the half-rotted leaves on the forest floor. Reacts on a weekly scale.",
+  },
+  {
+    abbr: "DC",
+    range: "0 → 800+",
+    plain:
+      "Moisture deep in the soil. Slow to respond — tracks long-term drought through the whole season.",
+  },
+  {
+    abbr: "ISI",
+    range: "0 → 50+",
+    plain:
+      "Combines wind speed with how dry the surface fuel is. Predicts how fast a fire would start spreading.",
+  },
+  {
+    abbr: "BUI",
+    range: "0 → 200+",
+    plain:
+      "How much fuel is actually available to feed a fire if one starts.",
+  },
+  {
+    abbr: "KBDI",
+    range: "0 → 800",
+    plain:
+      "A drought index that resets after the wet season and grows on every rain-free day.",
+  },
+  {
+    abbr: "SPI",
+    range: "−3 → +3",
+    plain:
+      "Compares this period's rain to what's normal for this time of year. Negative = unusually dry, positive = unusually wet.",
+  },
+];
+
+const LIMITATIONS = [
+  {
+    title: "Clouds hide vegetation",
+    body: "Galicia is cloudy ~60% of the year. When clouds block the satellite, our weekly NDVI / NDMI refresh skips those pixels and falls behind, especially in winter.",
+  },
+  {
+    title: "Tiny fires are invisible",
+    body: "Satellites only spot fires bigger than roughly a tennis-court (375 m × 375 m for VIIRS, 1 km × 1 km for MODIS). A small understory fire stays hidden until it reaches the treetops.",
+  },
+  {
+    title: "FWI is a regional average",
+    body: "The Fire Weather Index gives one number for a whole region — it doesn't know that a particular canyon funnels wind, or that this strip was logged last year. Local quirks aren't captured.",
+  },
+  {
+    title: "The model learned from 2018-2022",
+    body: "Climate is shifting. Future fire seasons may not look like recent ones, so the score's accuracy can drift over time. We re-train periodically.",
+  },
+  {
+    title: "Probabilities aren't calibrated",
+    body: "A 'Risk 75%' from a Random Forest doesn't strictly mean 75 of 100 such days end in fire. Treat the number as a ranking — higher means more concerning, not a literal probability.",
+  },
 ];
 
 export default function MethodologyPage() {
@@ -94,10 +201,10 @@ export default function MethodologyPage() {
         <h1 className="mt-2 font-display text-3xl font-bold">
           Fire-See methodology
         </h1>
-        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] max-w-prose">
-          How Fire-See builds the risk numbers you see on the dashboard, which
-          datasets feed them, what the model can and cannot do, and how to cite
-          this work.
+        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] max-w-prose leading-relaxed">
+          A plain-language tour of where the numbers on this dashboard come
+          from, how we compute them, what the model can — and can&apos;t —
+          tell you, and how to cite this work.
         </p>
       </header>
 
@@ -119,30 +226,41 @@ export default function MethodologyPage() {
         </ol>
       </nav>
 
-      <section id="overview" className="mb-8 scroll-mt-6">
+      <section id="overview" className="mb-10 scroll-mt-6">
         <h2 className="font-display text-xl font-semibold">
-          What this dashboard is (and is not)
+          What this dashboard is (and isn&apos;t)
         </h2>
         <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
-          Fire-See is a research-grade public dashboard that aggregates open
-          datasets to estimate wildfire risk for eight forest zones in Ourense
-          (Galicia, Spain). It is{" "}
+          Fire-See is an open dashboard that mixes free public datasets to
+          estimate how fire-prone eight forest zones in Ourense, Galicia,
+          look right now. Think of it as a research tool and a public
+          information hub, not a 911 service.
+        </p>
+        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
+          It is{" "}
           <strong className="text-[var(--color-fg)]">not</strong> a substitute
-          for official emergency channels. For active emergencies, contact{" "}
-          <strong className="text-[var(--color-fg)]">112</strong> or consult
+          for official emergency channels. For an active emergency, call{" "}
+          <strong className="text-[var(--color-fg)]">112</strong> or check
           the Xunta Emerxencias portal.
         </p>
       </section>
 
-      <section id="sources" className="mb-8 scroll-mt-6">
-        <h2 className="font-display text-xl font-semibold">Data sources</h2>
-        <Card variant="elevated" className="mt-3 p-0 overflow-hidden">
+      <section id="sources" className="mb-10 scroll-mt-6">
+        <h2 className="font-display text-xl font-semibold">
+          Where the data comes from
+        </h2>
+        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
+          Everything you see is built from open feeds — Spanish weather,
+          NASA satellites, Copernicus (the EU&apos;s Earth-observation
+          program), and OpenStreetMap. No private data, no proprietary models.
+        </p>
+        <Card variant="elevated" className="mt-4 p-0 overflow-hidden">
           <table className="w-full text-[12.5px]">
             <thead className="bg-white/[0.03]">
               <tr className="text-left text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
                 <th className="px-4 py-2">Source</th>
-                <th className="px-4 py-2">Use</th>
-                <th className="px-4 py-2">Refresh</th>
+                <th className="px-4 py-2">What we use it for</th>
+                <th className="px-4 py-2">Updated</th>
                 <th className="px-4 py-2">License</th>
               </tr>
             </thead>
@@ -152,14 +270,16 @@ export default function MethodologyPage() {
                   key={s.name}
                   className="border-t border-[var(--color-border)]"
                 >
-                  <td className="px-4 py-2 font-semibold">{s.name}</td>
-                  <td className="px-4 py-2 text-[var(--color-fg-muted)]">
+                  <td className="px-4 py-2 font-semibold align-top">
+                    {s.name}
+                  </td>
+                  <td className="px-4 py-2 text-[var(--color-fg-muted)] align-top leading-snug">
                     {s.purpose}
                   </td>
-                  <td className="px-4 py-2 text-[var(--color-fg-muted)] tabular">
+                  <td className="px-4 py-2 text-[var(--color-fg-muted)] tabular align-top">
                     {s.refresh}
                   </td>
-                  <td className="px-4 py-2 text-[var(--color-fg-subtle)] text-[11px]">
+                  <td className="px-4 py-2 text-[var(--color-fg-subtle)] text-[11px] align-top">
                     {s.license}
                   </td>
                 </tr>
@@ -169,27 +289,46 @@ export default function MethodologyPage() {
         </Card>
       </section>
 
-      <section id="model" className="mb-8 scroll-mt-6">
-        <h2 className="font-display text-xl font-semibold">ML model</h2>
+      <section id="model" className="mb-10 scroll-mt-6">
+        <h2 className="font-display text-xl font-semibold">
+          How the risk score is calculated
+        </h2>
         <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
-          V3 (May 2026): a Random Forest classifier with 200 trees,
-          min-samples-leaf = 2, trained on 2929 samples drawn from MCD64A1
-          burned-area pixels and matched non-burned pixels across 2018–2022
-          fire seasons (May–Sep). Sampling is restricted to ESA WorldCover
-          tree-cover / shrubland / grassland classes so non-burns are
-          potentially burnable. Burned and non-burned classes share the
-          same DOY distribution by paired sampling — without this, the
-          model would trivially separate classes via seasonal weather.
-          Inference runs as a JS forward-pass over the exported tree dump
-          per request, modulated by live weather modifiers and per-zone
-          NDVI/NDMI overrides from the weekly GEE refresh.
+          The risk number for each zone (0 – 100%) comes from a
+          machine-learning model called a{" "}
+          <strong className="text-[var(--color-fg)]">Random Forest</strong>.
+          Picture it as 200 small judges. Each judge looks at a handful of
+          clues — how green the trees are, how dry the soil is, how steep
+          the slope, how hot the ground — and votes &quot;risky&quot; or
+          &quot;safe&quot;. The percentage of judges that voted
+          &quot;risky&quot; is the final score.
+        </p>
+        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
+          We taught the judges by showing them{" "}
+          <strong className="text-[var(--color-fg)]">2,929 real examples</strong>{" "}
+          from Galicia fire seasons 2018–2022. Half were patches that
+          actually burned (NASA&apos;s satellite-derived burn map flagged
+          them); the other half were similar-looking patches that
+          didn&apos;t burn. The model learns what the burned patches had in
+          common before they caught fire.
+        </p>
+        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
+          A score of 75% doesn&apos;t mean &quot;75 out of 100 such days
+          will end in fire&quot; — it means &quot;most of our judges think
+          this looks like the kind of patch that has burned in the past&quot;.
+          Treat it as a ranking, not a literal probability.
         </p>
 
         <Card variant="elevated" className="mt-4 p-4">
-          <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
-            Feature importance
+          <div className="flex items-baseline justify-between">
+            <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
+              What the judges weigh
+            </div>
+            <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--color-fg-subtle)]">
+              Importance %
+            </div>
           </div>
-          <ul className="mt-3 space-y-1.5">
+          <ul className="mt-3 space-y-2">
             {FEATURES.map((f) => {
               const w = parseFloat(f.weight) / 25;
               return (
@@ -197,8 +336,11 @@ export default function MethodologyPage() {
                   key={f.name}
                   className="flex items-center gap-3 text-[12px]"
                 >
-                  <span className="w-32 font-mono text-[11px] text-[var(--color-fg-muted)]">
-                    {f.name}
+                  <span className="w-44 text-[12px] text-[var(--color-fg-muted)]">
+                    <span className="font-mono text-[10.5px] text-[var(--color-fg-subtle)] mr-1.5">
+                      {f.name}
+                    </span>
+                    {f.plain}
                   </span>
                   <span className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
                     <span
@@ -213,34 +355,44 @@ export default function MethodologyPage() {
               );
             })}
           </ul>
-          <p className="mt-3 text-[11px] text-[var(--color-fg-subtle)]">
-            V3 (May 2026) drops the broken <code>dist_roads</code> feature
-            and rebuilds the dataset with per-event 30-day pre-burn windows
-            (NDVI/NDMI/LST measured strictly before the fire, with paired DOY
-            sampling between burned and non-burned classes to remove
-            seasonal leakage) and burnable-only land cover from ESA
-            WorldCover. Headline AUC moved from 0.74 → 0.84.
-          </p>
         </Card>
+
+        <p className="mt-4 text-[11.5px] text-[var(--color-fg-subtle)] leading-relaxed">
+          For the curious: this is V3 (May 2026). Compared to V1 we drop a
+          broken &quot;distance to roads&quot; feature that turned out to be
+          a constant in our area, and we rebuild the dataset using
+          per-event 30-day pre-burn windows so the vegetation snapshots are
+          measured strictly before each fire. Headline AUC moved from{" "}
+          <strong className="text-[var(--color-fg)]">0.74 → 0.84</strong>.
+        </p>
       </section>
 
-      <section id="fwi" className="mb-8 scroll-mt-6">
-        <h2 className="font-display text-xl font-semibold">FWI computation</h2>
+      <section id="fwi" className="mb-10 scroll-mt-6">
+        <h2 className="font-display text-xl font-semibold">
+          The FWI weather index
+        </h2>
         <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
-          Implemented client-side in TypeScript following Van Wagner (1987)
-          for the Canadian Forest Fire Weather Index System. Daily state
-          (FFMC / DMC / DC) is persisted in Upstash KV and advanced once per
-          day by an authenticated cron call. Forecast: Open-Meteo daily
-          aggregates fed forward through the same equations.
+          The{" "}
+          <strong className="text-[var(--color-fg)]">Fire Weather Index</strong>{" "}
+          (FWI) is a single number from 0 to 50+ that summarizes how
+          fire-ready the weather is. It was invented in Canada in 1987 and
+          is now the EU standard — every official European fire warning
+          you&apos;ve seen uses it.
+        </p>
+        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
+          Fire-See computes FWI in your browser, day by day, from the same
+          equations the Canadian Forest Service published in 1987, fed with
+          weather forecasts from Open-Meteo. Each component below answers a
+          slightly different question.
         </p>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {GLOSSARY.filter((g) => g.category === "index").map((g) => (
+          {FWI_INDICES.map((g) => (
             <Card
-              key={g.id}
+              key={g.abbr}
               variant="elevated"
               className="p-3"
-              id={g.id}
+              id={g.abbr.toLowerCase()}
             >
               <div className="flex items-baseline justify-between">
                 <strong className="font-mono text-[12px]">{g.abbr}</strong>
@@ -248,75 +400,90 @@ export default function MethodologyPage() {
                   {g.range}
                 </span>
               </div>
-              <p className="mt-1 text-[12px] text-[var(--color-fg-muted)]">
-                {g.definition.en}
+              <p className="mt-1 text-[12px] text-[var(--color-fg-muted)] leading-snug">
+                {g.plain}
               </p>
             </Card>
           ))}
         </div>
       </section>
 
-      <section id="performance" className="mb-8 scroll-mt-6">
+      <section id="performance" className="mb-10 scroll-mt-6">
         <h2 className="font-display text-xl font-semibold">
-          Performance & validation
+          How well does it work?
         </h2>
         <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
-          Reported on stratified random 5-fold cross-validation across 2929
-          samples (May–Sep 2018-2022, ESA WorldCover burnable land only):
+          We test the model with a standard procedure called{" "}
+          <strong className="text-[var(--color-fg)]">cross-validation</strong>:
+          hide a slice of the training examples, train on the rest, then
+          ask the model to score the hidden slice and check how often it
+          gets it right. Repeat five times with different slices and
+          average.
         </p>
-        <ul className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
+          The headline number is{" "}
+          <strong className="text-[var(--color-fg)]">AUC = 0.84</strong>.
+          What that means in plain words: pick one burned patch and one
+          patch that didn&apos;t burn at random — the model gives the
+          burned one a higher risk score 84 times out of 100. Pure chance
+          would be 50/100; perfect would be 100/100.
+        </p>
+
+        <ul className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Stat label="AUC-ROC" value="0.84" />
-          <Stat label="Accuracy" value="79.0 %" />
-          <Stat label="Kappa" value="0.48" />
-          <Stat label="Precision" value="73.5 %" />
-          <Stat label="Recall" value="53.7 %" />
+          <Stat label="Accuracy" value="79 %" />
+          <Stat label="Precision" value="74 %" />
+          <Stat label="Recall" value="54 %" />
           <Stat label="F1" value="0.62" />
+          <Stat label="Kappa" value="0.48" />
           <Stat label="Train n" value="2 343" />
           <Stat label="Test n" value="586" />
         </ul>
-        <p className="mt-3 text-[11.5px] text-[var(--color-fg-subtle)]">
-          Honest disclosure: leave-one-year-out CV (train on 4 fire seasons,
-          test on the 5th) lands at AUC ≈ 0.66. The 0.84 above is the
-          apples-to-apples successor to V1's 0.74 (same metric); the 0.66 is
-          the harder cross-year transfer score. Random Forest probabilities
-          are also poorly calibrated by default — treat the score as a
-          relative ranking signal, not an absolute probability.
+
+        <p className="mt-4 text-[12.5px] text-[var(--color-fg-muted)] leading-relaxed">
+          <strong className="text-[var(--color-fg)]">A more honest test.</strong>{" "}
+          Random cross-validation can be a bit forgiving because the train
+          and test slices share the same fire seasons. A harder test —
+          training on four full fire seasons and predicting a year the
+          model has never seen — drops AUC to about 0.66. That gap is the
+          gap between &quot;sees similar weather&quot; and &quot;sees a
+          new climate.&quot; We report both.
         </p>
       </section>
 
-      <section id="limitations" className="mb-8 scroll-mt-6">
+      <section id="limitations" className="mb-10 scroll-mt-6">
         <h2 className="font-display text-xl font-semibold">
-          Known limitations
+          What it can&apos;t see
         </h2>
-        <ul className="mt-3 space-y-2 text-[13px] text-[var(--color-fg-muted)] list-disc pl-5">
-          <li>
-            Cloud cover gaps in Sentinel-2 NDVI/NDMI — Galicia averages 60 %
-            cloudy days; weekly composites can lag during winter.
-          </li>
-          <li>
-            FIRMS active-fire detection floor is ~1 km² (MODIS) / ~375 m²
-            (VIIRS). Small understory fires may go undetected until they
-            crown.
-          </li>
-          <li>
-            FWI assumes uniform fuel and flat terrain; local effects (canyon
-            funnelling, fuel breaks, recent burns) are not modelled.
-          </li>
-          <li>
-            Risk score is fitted to 2018–2022 fire seasons; climate
-            non-stationarity may degrade out-of-distribution performance.
-          </li>
-          <li>
-            <code>dist_roads</code> feature is currently a constant — see ML
-            model section.
-          </li>
+        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
+          A model is only as good as what it can measure. Here are the
+          biggest blind spots:
+        </p>
+        <ul className="mt-4 space-y-3">
+          {LIMITATIONS.map((l) => (
+            <li
+              key={l.title}
+              className="px-4 py-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]"
+            >
+              <div className="text-[13px] font-semibold text-[var(--color-fg)]">
+                {l.title}
+              </div>
+              <p className="mt-1 text-[12.5px] text-[var(--color-fg-muted)] leading-snug">
+                {l.body}
+              </p>
+            </li>
+          ))}
         </ul>
       </section>
 
-      <section id="version" className="mb-8 scroll-mt-6">
+      <section id="version" className="mb-10 scroll-mt-6">
         <h2 className="font-display text-xl font-semibold">
           Version & reproducibility
         </h2>
+        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
+          Everything you see is reproducible from the GitHub repo with one
+          random seed. No proprietary code, no hidden weights.
+        </p>
         <Card variant="elevated" className="mt-3 p-4 text-[12.5px] font-mono">
           <div className="grid grid-cols-2 gap-y-1">
             <span className="text-[var(--color-fg-subtle)]">Schema</span>
@@ -344,6 +511,10 @@ export default function MethodologyPage() {
 
       <section id="citation" className="mb-8 scroll-mt-6">
         <h2 className="font-display text-xl font-semibold">Citation</h2>
+        <p className="mt-3 text-[14px] text-[var(--color-fg-muted)] leading-relaxed">
+          If you reference Fire-See in an article, paper or report, this is
+          the citation block.
+        </p>
         <pre className="mt-3 p-4 rounded-md border border-[var(--color-border)] bg-black/40 text-[11.5px] overflow-x-auto whitespace-pre">
 {`@misc{firesee2026,
   author       = {Mu\\u{n}oz, Pablo},
