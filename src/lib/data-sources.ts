@@ -113,10 +113,17 @@ export async function fetchWeather(): Promise<LiveWeather> {
   const aemetFetch = (input: string, init: RequestInit = {}) =>
     fetch(input, { ...init, signal: AbortSignal.timeout(4000) });
 
+  // AEMET returns metadata as application/json but the actual `datos` blob as
+  // text/plain;charset=ISO-8859-15 even though the body is valid JSON. We
+  // can't gate on Content-Type alone — instead read text and try to parse,
+  // rejecting only if the body is clearly not JSON (e.g. an HTML error page).
   const safeJson = async (res: Response) => {
-    const ct = res.headers.get("content-type") ?? "";
-    if (!ct.includes("json")) throw new Error(`non-JSON ${res.status}`);
-    return res.json();
+    const text = await res.text();
+    const trimmed = text.trim();
+    if (!trimmed || trimmed.startsWith("<")) {
+      throw new Error(`non-JSON body (${res.status})`);
+    }
+    return JSON.parse(trimmed);
   };
 
   try {
