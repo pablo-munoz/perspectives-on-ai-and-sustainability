@@ -172,10 +172,16 @@ export default function MapboxMap({
       });
 
       // ----- Optional overlay: EFFIS Fire Weather Index (Copernicus WMS) -----
+      // The `mf010.fwi` layer has a TIME dimension that defaults to
+      // 2021-01-01 (winter) when omitted, producing fully-transparent tiles.
+      // We pin TIME to yesterday UTC so the toggle actually shows current FWI.
+      const effisDate = new Date(Date.now() - 24 * 3600 * 1000)
+        .toISOString()
+        .slice(0, 10);
       map.addSource(EFFIS_SOURCE_ID, {
         type: "raster",
         tiles: [
-          "https://maps.effis.emergency.copernicus.eu/effis?service=WMS&version=1.1.1&request=GetMap&layers=mf010.fwi&styles=&format=image/png&transparent=true&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}",
+          `https://maps.effis.emergency.copernicus.eu/effis?service=WMS&version=1.1.1&request=GetMap&layers=mf010.fwi&styles=&format=image/png&transparent=true&srs=EPSG:3857&width=256&height=256&TIME=${effisDate}&bbox={bbox-epsg-3857}`,
         ],
         tileSize: 256,
         attribution: "© European Union, Copernicus EFFIS",
