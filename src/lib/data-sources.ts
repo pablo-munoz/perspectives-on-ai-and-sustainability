@@ -4,6 +4,9 @@
  * can lock in cold-start failure responses.
  */
 
+import https from "node:https";
+import { URL } from "node:url";
+
 const STATION_ID = "1690A";
 const OURENSE_BBOX = "-8.5,41.8,-7.0,42.5";
 const FIRMS_SOURCE = "VIIRS_SNPP_NRT";
@@ -108,34 +111,82 @@ export async function fetchWeather(): Promise<LiveWeather> {
     };
   }
 
-  // Strict timeout — AEMET intermittently times out at the TLS layer; a stale
-  // KV cache served by the wrapper is far better UX than a 6 s hang.
-  const aemetFetch = (input: string, init: RequestInit = {}) =>
-    fetch(input, { ...init, signal: AbortSignal.timeout(4000) });
+  // AEMET's TLS stack is incompatible with Node's undici fetch — every request
+  // closes the socket mid-handshake with UND_ERR_SOCKET, while `curl` and
+  // Node's native `https` module work fine against the same endpoint.
+  // We use `node:https` directly to dodge undici. (Vercel's Node runtime
+  // exposes this; routes calling AEMET must not be edge.)
+  const aemetGet = (url: string, sendKey: boolean, timeoutMs: number) =>
+    new Promise<{ status: number; body: string }>((resolve, reject) => {
+      const u = new URL(url);
+      const req = https.request(
+        {
+          hostname: u.hostname,
+          path: `${u.pathname}${u.search}`,
+          method: "GET",
+          headers: sendKey ? { api_key: key } : {},
+        },
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on("data", (c: Buffer) => chunks.push(c));
+          res.on("end", () =>
+            resolve({
+              status: res.statusCode ?? 0,
+              body: Buffer.concat(chunks).toString("utf8"),
+            })
+          );
+          res.on("error", reject);
+        }
+      );
+      req.on("error", reject);
+      req.setTimeout(timeoutMs, () => req.destroy(new Error("aemet timeout")));
+      req.end();
+    });
 
   // AEMET returns metadata as application/json but the actual `datos` blob as
   // text/plain;charset=ISO-8859-15 even though the body is valid JSON. We
   // can't gate on Content-Type alone — instead read text and try to parse,
   // rejecting only if the body is clearly not JSON (e.g. an HTML error page).
-  const safeJson = async (res: Response) => {
-    const text = await res.text();
-    const trimmed = text.trim();
+  const parseBody = (body: string, status: number) => {
+    const trimmed = body.trim();
     if (!trimmed || trimmed.startsWith("<")) {
-      throw new Error(`non-JSON body (${res.status})`);
+      throw new Error(`non-JSON body (${status})`);
     }
     return JSON.parse(trimmed);
   };
 
-  try {
-    const metaRes = await aemetFetch(
-      `https://opendata.aemet.es/opendata/api/observacion/convencional/datos/estacion/${STATION_ID}`,
-      { headers: { api_key: key }, cache: "no-store" }
-    );
-    const meta = await safeJson(metaRes);
+  // AEMET's edge regularly returns empty replies under load; retry a few
+  // times with short backoff before giving up.
+  const fetchWithRetry = async (
+    url: string,
+    sendKey: boolean,
+    timeoutMs: number,
+    attempts = 3
+  ) => {
+    let lastErr: unknown;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const { status, body } = await aemetGet(url, sendKey, timeoutMs);
+        return parseBody(body, status);
+      } catch (err) {
+        lastErr = err;
+        await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+      }
+    }
+    throw lastErr;
+  };
 
+  // Attempt 1: live observation from station 1690A. Isolated try so a TLS
+  // hang here doesn't skip the forecast fallback below.
+  try {
+    const meta = await fetchWithRetry(
+      `https://opendata.aemet.es/opendata/api/observacion/convencional/datos/estacion/${STATION_ID}`,
+      true,
+      2500,
+      2
+    );
     if (meta?.estado === 200 && meta?.datos) {
-      const dataRes = await aemetFetch(meta.datos, { cache: "no-store" });
-      const obs = await safeJson(dataRes);
+      const obs = await fetchWithRetry(meta.datos, false, 5000, 3);
       if (Array.isArray(obs) && obs.length > 0) {
         const latest = obs[obs.length - 1];
         return {
@@ -151,16 +202,20 @@ export async function fetchWeather(): Promise<LiveWeather> {
         };
       }
     }
+  } catch (err) {
+    console.warn("[AEMET] observation unavailable, trying forecast:", err);
+  }
 
-    // Forecast fallback
-    const fMeta = await aemetFetch(
+  // Attempt 2: municipal daily forecast (32054 = Ourense).
+  try {
+    const fJson = await fetchWithRetry(
       `https://opendata.aemet.es/opendata/api/prediccion/especifica/municipio/diaria/32054`,
-      { headers: { api_key: key }, cache: "no-store" }
+      true,
+      4000,
+      3
     );
-    const fJson = await safeJson(fMeta);
     if (fJson?.estado === 200 && fJson?.datos) {
-      const dataRes = await aemetFetch(fJson.datos, { cache: "no-store" });
-      const forecast = await safeJson(dataRes);
+      const forecast = await fetchWithRetry(fJson.datos, false, 5000, 3);
       const today = forecast?.[0]?.prediccion?.dia?.[0];
       if (today) {
         return {
@@ -169,14 +224,17 @@ export async function fetchWeather(): Promise<LiveWeather> {
           windSpeed: null,
           windDirection: null,
           precipitation: today.probPrecipitacion?.[0]?.value ?? 0,
-          lastUpdated: forecast[0].elaborado || lastUpdated,
+          // Use fetch time, not AEMET's `elaborado` (production timestamp).
+          // The status route ages this against expectedEveryMs, and the daily
+          // forecast's `elaborado` can be hours stale even right after fetch.
+          lastUpdated,
           source: "AEMET Forecast",
           station: "Ourense (32054)",
         };
       }
     }
   } catch (err) {
-    console.error("AEMET fetch error:", err);
+    console.error("[AEMET] forecast fetch failed:", err);
   }
 
   return {
