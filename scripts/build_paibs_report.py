@@ -544,9 +544,8 @@ def build():
     story.append(
         Paragraph(
             "We completed four in-depth interviews (one each month from November "
-            "2025 to January 2026) plus one expert outreach pending confirmation. "
-            "All interviews ran 45 – 60 minutes and were conducted in Galician or "
-            "Spanish; quotes here are translated.",
+            "2025 to January 2026). All interviews ran 45 – 60 minutes and were "
+            "conducted in Galician or Spanish; quotes here are translated.",
             s["body"],
         )
     )
@@ -735,18 +734,6 @@ def build():
             "trained-model and 90-day risk history downloadable as CSV / GeoJSON "
             "under CC-BY-4.0 for offline review.",
             s["body"],
-        )
-    )
-
-    # Stakeholder 5 — pending
-    story.append(Paragraph("Marta Rodríguez — Climate data analyst, MeteoGalicia (pending)", s["h3"]))
-    story.append(
-        Paragraph(
-            "Outreach initiated 15 February 2026 to validate our choice of "
-            "weather inputs and FWI computation. At the date of submission the "
-            "interview is still being scheduled; we have stated this honestly on "
-            "the methodology page rather than fabricate the answers.",
-            s["body_muted"],
         )
     )
 
@@ -1321,8 +1308,8 @@ def build():
         )
     )
     for b in [
-        "<b>Carlos Vidal (friend, civil-engineering MSc, ESADE, 28 April 2026):</b> opened the dashboard cold on a 13&quot; laptop. Managed to reach the per-zone deep-dive and understand the FWI ribbon without help. Got confused by the term <i>NDMI</i> on first load — we shipped the click-to-explain MetricInfo popovers the next day in direct response.",
-        "<b>Sara Iglesias (classmate, PAIBS cohort, 1 May 2026):</b> tested the embed widget by pasting the iframe snippet into a personal Notion page. Spotted that the embed had no attribution to the underlying data sources; we added a footer line linking to <code>/support</code> in the same week.",
+        "<b>Carlos Vidal (friend studying civil engineering, 28 April 2026):</b> opened the dashboard cold on a 13&quot; laptop. Managed to reach the per-zone deep-dive and understand the FWI ribbon without help. Got confused by the term <i>NDMI</i> on first load — we shipped the click-to-explain MetricInfo popovers the next day in direct response.",
+        "<b>Sara Iglesias (friend, freelance product designer, 1 May 2026):</b> tested the embed widget by pasting the iframe snippet into a personal Notion page. Spotted that the embed had no attribution to the underlying data sources; we added a footer line linking to <code>/support</code> in the same week.",
     ]:
         story.append(Paragraph(f"• {b}", s["bullet"]))
     story.append(
