@@ -237,6 +237,51 @@ export async function fetchWeather(): Promise<LiveWeather> {
     console.error("[AEMET] forecast fetch failed:", err);
   }
 
+  // Attempt 3: Open-Meteo current conditions. Key-less, very reliable.
+  // Listed as a data source on the public methodology page, so this is not
+  // a covert dependency — it's the documented fallback when AEMET is down.
+  try {
+    const om = new URL("https://api.open-meteo.com/v1/forecast");
+    om.searchParams.set("latitude", "42.34");
+    om.searchParams.set("longitude", "-7.86");
+    om.searchParams.set(
+      "current",
+      "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation"
+    );
+    om.searchParams.set("timezone", "Europe/Madrid");
+
+    const res = await fetch(om, { cache: "no-store" });
+    if (res.ok) {
+      const json = (await res.json()) as {
+        current?: {
+          temperature_2m?: number;
+          relative_humidity_2m?: number;
+          wind_speed_10m?: number;
+          wind_direction_10m?: number;
+          precipitation?: number;
+        };
+      };
+      const c = json.current;
+      if (c && typeof c.temperature_2m === "number") {
+        return {
+          temperature: c.temperature_2m,
+          humidity: c.relative_humidity_2m ?? null,
+          windSpeed: c.wind_speed_10m != null ? Math.round(c.wind_speed_10m) : null,
+          windDirection:
+            c.wind_direction_10m != null
+              ? degreesToDirection(c.wind_direction_10m)
+              : null,
+          precipitation: c.precipitation ?? 0,
+          lastUpdated,
+          source: "Open-Meteo (live)",
+          station: "Ourense 42.34N / 7.86W",
+        };
+      }
+    }
+  } catch (err) {
+    console.error("[Open-Meteo] current fetch failed:", err);
+  }
+
   return {
     temperature: null,
     humidity: null,
